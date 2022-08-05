@@ -1,7 +1,0 @@
-num_episodes: 10
-GUI: false
-seed: 1
-resize_height: 160
-resize_width: 160
-side_pick_only: true
-add_noise: false

@@ -1,5 +1,5 @@
 assets/**
-store_exper_data/**
+store_expert_data/**
 train_from_demonstr/**
 train_RL_DrQ/**
 train_RL_DrQ_expert_obs_adv/**
