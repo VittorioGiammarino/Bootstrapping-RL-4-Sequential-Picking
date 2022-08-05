@@ -276,9 +276,8 @@ class PPO_adv:
         diff_ratio = ratio-clipped
         diff_log_pi = log_pi - minibatch['log_pis']
         
-        
+        entropy_bonus = pi.entropy().reshape(-1,1)
         if self.config.entropy:
-            entropy_bonus = pi.entropy().reshape(-1,1)
             loss = (-1)*(L_clip - self.config.c1*L_vf + self.config.c2*entropy_bonus).mean()
         else:
             loss = (-1)*(L_clip - self.config.c1*L_vf).mean()
