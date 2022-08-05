@@ -83,7 +83,7 @@ python train_RL_PPO_expert_obs_adv.py entropy=false num_episodes_per_rollout=3 t
 ```
 
 ```shell
-python train_RL_DrQ_expert_obs_adv.py augment=false num_seed_steps=100 num_train_steps=50000 GUI=false replay_buffer_size=50000
+python train_RL_DrQ_expert_obs_adv.py augment=true num_seed_steps=100 num_train_steps=50000 GUI=false replay_buffer_size=50000
 ```
 
 ```shell
