@@ -1,0 +1,65 @@
+
+defaults:
+  - _self_
+
+#misc
+use_tb: true
+seed: 1
+device: cuda
+GUI: true
+save_snapshot: true
+
+# pre-initialize policy using a policy learnt from demonstr
+path2data: store_expert_data/2022.08.02/100034_GUI=false/expert_data.pkl
+
+# train settings
+num_seed_steps: 100
+num_train_steps: 10000
+
+# interrupt when rollout goes too bad
+early_stop: false
+
+# env
+accuracy_error_weight: 2
+side_pick_only: true
+add_noise: true
+image_width: 160
+image_height: 160
+n_channels: 3
+
+# eval
+eval_every_episodes: 3
+num_eval_episodes: 1
+
+# replay buffer
+replay_buffer_size: 100000
+nstep: 1
+batch_size: 16
+
+#Agent
+discount: 0.99
+decoder_nc: 1
+learning_rate: 1e-4
+critic_target_tau: 0.02
+update_every_steps: 2
+augment: false
+
+#discriminator 
+feature_dim: 100
+hidden_dim: 1024
+reward_d_coef: 2.0
+reward_schedule: 'linear(1.0,0.0,10000)'
+
+#exploration strategy TBD
+gaussian_filter: false
+stddev_schedule: 'linear(5, 0.1, 10000)'
+
+# policy to evaluate
+evaluate_only: false
+eval_only_iterations: 10
+path2policy_eval: ???
+
+hydra:
+  run:
+    dir: ./train_RL_DrQ_expert_obs_adv/${now:%Y.%m.%d}/${now:%H%M%S}_${hydra.job.override_dirname}
+

@@ -1,0 +1,9 @@
+assets/**
+store_exper_data/**
+train_from_demonstr/**
+train_RL_DrQ/**
+train_RL_DrQ_expert_obs_adv/**
+train_RL_PPO/**
+train_RL_PPO_expert_obs_adv/**
+__pycache__/**
+models/__pycache__/**
