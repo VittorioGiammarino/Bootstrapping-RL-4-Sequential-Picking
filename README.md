@@ -38,6 +38,9 @@ rm assets.tar.xz
 gdown 16hTQUBs1Y4ua9Q69JMWEww2UlSV9t3aq
 tar -xf train_from_demonstr.tar.xz
 rm train_from_demonstr.tar.xz 
+gdown 1kkQ6q66tQOBD7aAgEbmdQrdOxiXGU_1o
+tar -xf store_expert_data.tar.xz
+rm store_expert_data.tar.xz
 ```
 
 **Step 4.** Run experiments
