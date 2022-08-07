@@ -1,6 +1,6 @@
 # Bootstrapping-RL-4-Sequential-Picking
 
-## Initial instruction
+## Initial instructions
 
 ### Use anaconda to create a virtual environment
 
@@ -26,7 +26,10 @@ conda activate BRL4SP
 **Step 3.** Download pretrained policy and assets
 
 Assets: https://drive.google.com/file/d/1UqU3PPLOr9Y4cY9mQNXKK4QkxlnVVVlB/view?usp=sharing
+
 Pretrained policy: https://drive.google.com/file/d/16hTQUBs1Y4ua9Q69JMWEww2UlSV9t3aq/view?usp=sharing
+
+Expert data: https://drive.google.com/file/d/1kkQ6q66tQOBD7aAgEbmdQrdOxiXGU_1o/view?usp=sharing
 
 or 
 

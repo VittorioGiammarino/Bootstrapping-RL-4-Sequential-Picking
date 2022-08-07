@@ -56,7 +56,7 @@ minibatch_size: 16
 feature_dim: 100
 hidden_dim: 1024
 reward_d_coef: 2.0
-reward_schedule: 'linear(1.0,0.0,10000)'
+reward_schedule: 'linear(1.0,0.0,1000)'
 
 #exploration terms
 entropy: true

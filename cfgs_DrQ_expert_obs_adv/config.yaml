@@ -14,7 +14,7 @@ path2data: store_expert_data/2022.08.02/100034_GUI=false/expert_data.pkl
 
 # train settings
 num_seed_steps: 100
-num_train_steps: 10000
+num_train_steps: 50000
 
 # interrupt when rollout goes too bad
 early_stop: false
@@ -48,7 +48,7 @@ augment: false
 feature_dim: 100
 hidden_dim: 1024
 reward_d_coef: 2.0
-reward_schedule: 'linear(1.0,0.0,10000)'
+reward_schedule: 'linear(1.0,0.0,40000)'
 
 #exploration strategy TBD
 gaussian_filter: false
