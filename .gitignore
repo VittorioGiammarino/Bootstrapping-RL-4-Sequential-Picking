@@ -7,5 +7,6 @@ train_RL_PPO/**
 train_RL_PPO_expert_obs_adv/**
 __pycache__/**
 models/__pycache__/**
+Figures/**
 
 *.tar.xz
