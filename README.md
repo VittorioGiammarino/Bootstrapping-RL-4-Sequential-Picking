@@ -65,7 +65,7 @@ python train_RL_PPO.py entropy=false num_episodes_per_rollout=3 total_number_of_
 
 
 ```shell
-python train_RL_DrQ.py augment=false num_seed_steps=1000 num_train_steps=50000 GUI=false train_from_imitation=true replay_buffer_size=50000
+python train_RL_DrQ.py augment=true num_seed_steps=1000 num_train_steps=50000 GUI=false train_from_imitation=true replay_buffer_size=50000
 ```
 
 ```shell
