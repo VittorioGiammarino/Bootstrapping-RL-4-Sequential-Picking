@@ -11,7 +11,7 @@ import pybullet as p
 import numpy as np
 import time
 
-from robot import Robot, Sunction, Cameras, PickPlace, PointCloud
+from robot import Robot, Suction, Cameras, PickPlace, PointCloud
 from boxes_generator import fill_template, generate_stack_of_boxes
 from pathlib import Path
 
@@ -55,7 +55,7 @@ class env:
             self.workspaceID = p.loadURDF(self.KUKA_KR70_WORKSPACE_URDF_PATH.as_posix(), [1, 0 ,0])
             self.pose_robot_base = ((0, 0, 0), p.getQuaternionFromEuler((0, 0, 0)))
             self.kuka = Robot(self.KUKA_KR70_PATH.as_posix(), self.pose_robot_base)
-            self.gripper = Sunction(self.SUCTION_BASE_URDF.as_posix(), self.SUCTION_HEAD_URDF.as_posix(), self.kuka.robotId) 
+            self.gripper = Suction(self.SUCTION_BASE_URDF.as_posix(), self.SUCTION_HEAD_URDF.as_posix(), self.kuka.robotId) 
             self.homing_not_succeeded = True
             self.speed = 0.03
             
@@ -100,33 +100,33 @@ class env:
             
             if self.cfg.side_pick_only: #this option forces a side pick
                 pose0 = self.kuka.compute_picking_pose()  
-                not_succeeded, sunctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
+                not_succeeded, suctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
                 
             else: #this option forces side or top pick according to 
                 if cartesian_position_box[2]>=0.5:
                     pose0 = self.kuka.compute_picking_pose()  
-                    not_succeeded, sunctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
+                    not_succeeded, suctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
                 elif cartesian_position_box[2]<0.5:
                     pose0 = self.kuka.compute_top_picking_pose() 
-                    not_succeeded, sunctioned_object, accuracy_error = self.primitive.TopPick(position0, pose0)
+                    not_succeeded, suctioned_object, accuracy_error = self.primitive.TopPick(position0, pose0)
                 else:
                     print("Issues with pose decision, Side pick by default")
                     pose0 = self.kuka.compute_picking_pose()  
-                    not_succeeded, sunctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
+                    not_succeeded, suctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
                 
-            if not not_succeeded and sunctioned_object is not None:
+            if not not_succeeded and suctioned_object is not None:
                 try:
-                    print(f"Sunctioned object: {sunctioned_object}")
+                    print(f"Suctioned object: {suctioned_object}")
                     print(f"List of boxes ID: {self.list_of_boxes}")
-                    p.removeBody(sunctioned_object)
-                    self.list_of_boxes.remove(sunctioned_object)
+                    p.removeBody(suctioned_object)
+                    self.list_of_boxes.remove(suctioned_object)
                     reward = 1-self.cfg.accuracy_error_weight*accuracy_error
                     print(f"Good Job, {reward:.3f} reward")
                     
-                    self.accuracy[sunctioned_object-self.min_ID_boxes].append(accuracy_error)
+                    self.accuracy[suctioned_object-self.min_ID_boxes].append(accuracy_error)
                     
                 except:
-                    print("Error in removing sunctioned object from list of boxes")
+                    print("Error in removing suctioned object from list of boxes")
                     reward=0
                       
             else:

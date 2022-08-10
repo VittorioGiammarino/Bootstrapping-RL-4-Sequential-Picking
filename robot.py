@@ -215,13 +215,13 @@ class Robot:
                     
         return in_workspace
          
-class Sunction:
+class Suction:
     def __init__(self, URDF_BASE, URDF_HEAD, robotId):
         self.robotId = robotId
-        self.sunction = p.loadURDF(URDF_BASE)
+        self.suction = p.loadURDF(URDF_BASE)
         p.createConstraint(parentBodyUniqueId=self.robotId, 
                            parentLinkIndex=5, 
-                           childBodyUniqueId=self.sunction, 
+                           childBodyUniqueId=self.suction, 
                            childLinkIndex=-1, 
                            jointType=p.JOINT_FIXED, 
                            jointAxis=(0, 0, 0), 
@@ -230,10 +230,10 @@ class Sunction:
                            parentFrameOrientation=p.getQuaternionFromEuler((0, np.pi, 0)), 
                            childFrameOrientation=p.getQuaternionFromEuler((0, np.pi/2, 0)))
         
-        self.sunction_tip = p.loadURDF(URDF_HEAD)
+        self.suction_tip = p.loadURDF(URDF_HEAD)
         p.createConstraint(parentBodyUniqueId=self.robotId, 
                            parentLinkIndex=5, 
-                           childBodyUniqueId=self.sunction_tip, 
+                           childBodyUniqueId=self.suction_tip, 
                            childLinkIndex=-1, 
                            jointType=p.JOINT_FIXED, 
                            jointAxis=(0, 0, 0), 
@@ -252,7 +252,7 @@ class Sunction:
         """Simulate suction using a rigid fixed constraint to contacted object."""
         error = None
         if not self.activated:
-            points = p.getContactPoints(bodyA=self.sunction_tip, linkIndexA=0)
+            points = p.getContactPoints(bodyA=self.suction_tip, linkIndexA=0)
             
             if points:
                 # Handle contact between suction with a rigid object.
@@ -260,7 +260,7 @@ class Sunction:
                     obj_id, contact_link = point[2], point[4]
                     
                 if obj_id != 0 and obj_id != 1:
-                    body_pose = p.getLinkState(self.sunction_tip, 0)
+                    body_pose = p.getLinkState(self.suction_tip, 0)
                     print(f"ee position: {body_pose[0]}")
                     
                     obj_pose = p.getBasePositionAndOrientation(obj_id)
@@ -274,7 +274,7 @@ class Sunction:
                                                        world_to_body[1],
                                                        obj_pose[0], 
                                                        obj_pose[1])
-                    self.contact_constraint = p.createConstraint(parentBodyUniqueId=self.sunction_tip,
+                    self.contact_constraint = p.createConstraint(parentBodyUniqueId=self.suction_tip,
                                                                  parentLinkIndex=0,
                                                                  childBodyUniqueId=obj_id,
                                                                  childLinkIndex=contact_link,
@@ -315,7 +315,7 @@ class Sunction:
 
     def detect_contact(self):
         """Detects a contact with a rigid object."""
-        body, link = self.sunction_tip, 0
+        body, link = self.suction_tip, 0
         if self.activated and self.contact_constraint is not None:
             try:
                 info = p.getConstraintInfo(self.contact_constraint)
@@ -329,7 +329,7 @@ class Sunction:
         # print(points)
         # exit()
         if self.activated:
-            points = [point for point in points if point[2] != self.sunction_tip]
+            points = [point for point in points if point[2] != self.suction_tip]
 
         # # We know if len(points) > 0, contact is made with SOME rigid item.
         if points:
@@ -537,7 +537,7 @@ class PickPlace:
         postpick_orientation = pick_pose #self.robot.PickFromSideOrientation
         postpick_pose = (tuple(postpick_position), postpick_orientation)
         timeout |= self.robot.movep(postpick_pose)
-        pick_success, sunctioned_object = self.gripper.check_grasp()
+        pick_success, suctioned_object = self.gripper.check_grasp()
         
         if pick_success:
             preplace_position_1 = list(copy.deepcopy(postpick_position))
@@ -573,7 +573,7 @@ class PickPlace:
             self.gripper.release()
             timeout |= self.robot.movep(prepick_pose)
             
-        return timeout, sunctioned_object, error
+        return timeout, suctioned_object, error
                 
     def TopPick(self, position0, pose0):
         pick_position = position0
@@ -610,7 +610,7 @@ class PickPlace:
         postpick_orientation = pick_pose #self.robot.PickFromSideOrientation
         postpick_pose = (tuple(postpick_position), postpick_orientation)
         timeout |= self.robot.movep(postpick_pose)
-        pick_success, sunctioned_object = self.gripper.check_grasp()
+        pick_success, suctioned_object = self.gripper.check_grasp()
         
         if pick_success:
             preplace_position_1 = list(copy.deepcopy(postpick_position))
@@ -646,7 +646,7 @@ class PickPlace:
             self.gripper.release()
             timeout |= self.robot.movep(prepick_pose)
             
-        return timeout, sunctioned_object, error        
+        return timeout, suctioned_object, error        
         
         
         

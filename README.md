@@ -23,7 +23,7 @@ conda env create -f environment.yml
 conda activate BRL4SP
 ```
 
-**Step 3.** Download pretrained policy and assets
+**Step 3.** Download pretrained policy and assets from within Bootstrapping-RL-4-Sequential-Picking
 
 Assets: https://drive.google.com/file/d/1UqU3PPLOr9Y4cY9mQNXKK4QkxlnVVVlB/view?usp=sharing
 

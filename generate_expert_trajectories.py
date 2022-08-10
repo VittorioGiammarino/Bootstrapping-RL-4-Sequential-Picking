@@ -13,7 +13,7 @@ import time
 import pybullet as p
 import numpy as np
 
-from robot import Robot, Sunction, Cameras, PickPlace, PointCloud
+from robot import Robot, Suction, Cameras, PickPlace, PointCloud
 from boxes_generator import fill_template, generate_stack_of_boxes
 from pathlib import Path
         
@@ -63,7 +63,7 @@ class Workspace:
             self.workspaceID = p.loadURDF(self.KUKA_KR70_WORKSPACE_URDF_PATH.as_posix(), [1, 0 ,0])
             self.pose_robot_base = ((0, 0, 0), p.getQuaternionFromEuler((0, 0, 0)))
             self.kuka = Robot(self.KUKA_KR70_PATH.as_posix(), self.pose_robot_base)
-            self.gripper = Sunction(self.SUCTION_BASE_URDF.as_posix(), self.SUCTION_HEAD_URDF.as_posix(), self.kuka.robotId) 
+            self.gripper = Suction(self.SUCTION_BASE_URDF.as_posix(), self.SUCTION_HEAD_URDF.as_posix(), self.kuka.robotId) 
             self.homing_not_succeeded = True
             self.speed = 0.03
             
@@ -163,14 +163,14 @@ class Workspace:
                     
                     if in_workspace: # if the selected point is in the workspace we attempt picking 
                         if top_pick:
-                            not_succeeded, sunctioned_object, accuracy_error = self.primitive.TopPick(position0, pose0)
+                            not_succeeded, suctioned_object, accuracy_error = self.primitive.TopPick(position0, pose0)
                         else:
-                            not_succeeded, sunctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
+                            not_succeeded, suctioned_object, accuracy_error = self.primitive.SidePick(position0, pose0)
                             
-                        if not not_succeeded and sunctioned_object is not None: # if picking succeeded then we store in the buffer
+                        if not not_succeeded and suctioned_object is not None: # if picking succeeded then we store in the buffer
                             try:
-                                p.removeBody(sunctioned_object)
-                                list_of_boxes.remove(sunctioned_object)
+                                p.removeBody(suctioned_object)
+                                list_of_boxes.remove(suctioned_object)
                                 reward = 1
                                 episode_reward+=reward
                                 print("Good Job, +1 reward")
@@ -179,7 +179,7 @@ class Workspace:
                                 buffer["action"].append([picking_pixel_y, picking_pixel_x])
                                 buffer["top pick"].append(top_pick)
                                 buffer["reward"].append(reward)
-                                buffer["accuracy error"][sunctioned_object-min_ID_boxes].append(accuracy_error)
+                                buffer["accuracy error"][suctioned_object-min_ID_boxes].append(accuracy_error)
                                 
                                 if len(list_of_boxes)==0:
                                     buffer["terminal"].append(True)
@@ -187,7 +187,7 @@ class Workspace:
                                     buffer["terminal"].append(False)
                                     
                             except:
-                                print("Error in remove sunctioned object from list of boxes")
+                                print("Error in remove suctioned object from list of boxes")
                                 continue
                             
                         else:
