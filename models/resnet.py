@@ -354,3 +354,92 @@ class Discriminator(nn.Module):
         transition = torch.cat([h, nh], dim = -1)
         d = self.net(self.trunk(transition))
         return d 
+
+class Encoder_Decoder_ResNet43_8s(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 output_dim,
+                 include_batchnorm=False,
+                 cutoff_early=False):
+        """Build Resnet 43 8s."""
+        super().__init__()
+
+        self.cutoff_early = cutoff_early
+
+        if include_batchnorm:
+            self.block_short = nn.Sequential(
+                Rearrange('b h w c -> b c h w'),
+                nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+            )
+        else:
+            self.block_short = nn.Sequential(
+                Rearrange('b h w c -> b c h w'),
+                nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+            )
+        self.block_short.apply(init_xavier_weights)
+
+        if cutoff_early:
+            self.block_cutoff_early = nn.Sequential(
+                ConvBlock(64, 5, [64, 64, output_dim], stride=1,
+                          include_batchnorm=include_batchnorm),
+                IdentityBlock(output_dim, 5, [64, 64, output_dim],
+                              include_batchnorm=include_batchnorm),
+                Rearrange('b c h w -> b h w c'),
+            )
+            self.block_cutoff_early.apply(init_xavier_weights)
+
+        self.encoder = nn.Sequential(
+            ConvBlock(64, 3, [64, 64, 64], stride=1),
+            IdentityBlock(64, 3, [64, 64, 64]),
+
+            ConvBlock(64, 3, [128, 128, 128], stride=2),
+            IdentityBlock(128, 3, [128, 128, 128]),
+
+            ConvBlock(128, 3, [256, 256, 256], stride=2),
+            IdentityBlock(256, 3, [256, 256, 256]),
+
+            ConvBlock(256, 3, [512, 512, 512], stride=2),
+            IdentityBlock(512, 3, [512, 512, 512]),
+        )
+        
+        self.encoder.apply(init_xavier_weights)
+
+        self.decoder = nn.Sequential(
+            ConvBlock(512, 3, [256, 256, 256], stride=1),
+            IdentityBlock(256, 3, [256, 256, 256]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(256, 3, [128, 128, 128], stride=1),
+            IdentityBlock(128, 3, [128, 128, 128]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(128, 3, [64, 64, 64], stride=1),
+            IdentityBlock(64, 3, [64, 64, 64]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(64, 3, [16, 16, output_dim], stride=1, activation=False),
+            IdentityBlock(output_dim, 3, [16, 16, output_dim], activation=False),
+
+            Rearrange('b c h w -> b h w c'),
+        )
+
+        self.decoder.apply(init_xavier_weights)
+        
+    def forward(self, x):
+        out = self.block_short(x)
+
+        if self.cutoff_early:
+            return self.block_cutoff_early(out)
+
+        self.h = self.encoder(out)
+
+        return self.decoder(self.h)
+
+    def get_embedding(self):
+        return self.h.reshape(self.h.shape[0], -1)

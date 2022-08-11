@@ -13,6 +13,7 @@ save_snapshot: true
 total_number_of_training_steps: 100000
 evaluate_every: 5000
 learning_rate: 1e-4
+augment: true
 
 #env
 accuracy_error_weight: 2
@@ -22,7 +23,7 @@ image_height: 160
 image_width: 160
 
 #expert data
-path2data: store_expert_data/2022.08.02/100034_GUI=false/expert_data.pkl
+path2data: store_expert_data/2022.08.10/185853_GUI=false,num_episodes=1,side_pick_only=true/expert_data.pkl
 
 #policy to evaluate
 evaluate_only: false

@@ -135,7 +135,7 @@ class Workspace:
         step = self.total_steps + 1
         self.agent.train_mode()
         
-        input_image, label = self.get_sample()
+        input_image, label = self.get_sample(self.cfg.augment)
         loss = self.agent.train(input_image, label)
         self.total_steps = step
         
@@ -149,13 +149,14 @@ class Workspace:
             self.training_step()
             
             if self.total_steps % self.cfg.evaluate_every == 0:
-                eval_reward, accuracy = self.env.eval_episode(self.agent)
+                for _ in range(self.cfg.eval_only_iterations):
+                    eval_reward, accuracy = self.env.eval_episode(self.agent)
+
+                    if self.cfg.use_tb:                    
+                        self.log_evaluation(eval_reward, accuracy)
                 
                 if self.cfg.save_snapshot:
                     self.save_snapshot()
-                    
-                if self.cfg.use_tb:                    
-                    self.log_evaluation(eval_reward, accuracy)
                     
                 print(f"Evaluation reward: {eval_reward}")
                     
