@@ -14,7 +14,7 @@ path2data: store_expert_data/2022.08.02/100034_GUI=false/expert_data.pkl
 
 # train settings
 num_seed_steps: 100
-num_train_steps: 50000
+num_train_steps: 200000
 
 # interrupt when rollout goes too bad
 early_stop: false
@@ -32,7 +32,7 @@ eval_every_episodes: 3
 num_eval_episodes: 1
 
 # replay buffer
-replay_buffer_size: 100000
+replay_buffer_size: 200000
 nstep: 1
 batch_size: 16
 
@@ -45,10 +45,12 @@ update_every_steps: 2
 augment: false
 
 #discriminator 
+learning_rate_discriminator: 4e-4
 feature_dim: 100
 hidden_dim: 1024
 reward_d_coef: 2.0
-reward_schedule: 'linear(1.0,0.0,40000)'
+reward_schedule: 'linear(1.0,0.0,180000)' #'linear(0.0,1.0,180000)'
+reward_schedule_flag: 'decrescent' # 'crescent'
 
 #exploration strategy TBD
 gaussian_filter: false

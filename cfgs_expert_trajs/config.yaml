@@ -12,6 +12,7 @@ resize_height: 160
 resize_width: 160
 
 #env
+parcel_chooser: Heuristic
 side_pick_only: true
 add_noise: false
 

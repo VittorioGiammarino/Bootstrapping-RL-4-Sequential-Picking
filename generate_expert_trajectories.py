@@ -62,7 +62,7 @@ class Workspace:
             self.planeID = p.loadURDF(self.PLANE_URDF_PATH.as_posix(), useFixedBase=1)
             self.workspaceID = p.loadURDF(self.KUKA_KR70_WORKSPACE_URDF_PATH.as_posix(), [1, 0 ,0])
             self.pose_robot_base = ((0, 0, 0), p.getQuaternionFromEuler((0, 0, 0)))
-            self.kuka = Robot(self.KUKA_KR70_PATH.as_posix(), self.pose_robot_base)
+            self.kuka = Robot(self.KUKA_KR70_PATH.as_posix(), self.pose_robot_base, parcel_chooser=self.cfg.parcel_chooser)
             self.gripper = Suction(self.SUCTION_BASE_URDF.as_posix(), self.SUCTION_HEAD_URDF.as_posix(), self.kuka.robotId) 
             self.homing_not_succeeded = True
             self.speed = 0.03

@@ -213,6 +213,7 @@ class DrQAgent_adv:
         self.reward_d_coef = self.config.reward_d_coef
         self.reward_schedule = self.config.reward_schedule
         self.delta = 1.0
+        self.w_env = 1.0
         
         self.critic = Critic(input_shape, output_channels, self.device).to(self.device)
         self.critic_target = Critic(input_shape, output_channels, self.device).to(self.device)
@@ -220,7 +221,7 @@ class DrQAgent_adv:
         
         #optimizers
         self.optimizer_critic = optim.Adam(self.critic.parameters(), lr=self.config.learning_rate)
-        self.discriminator_opt = optim.Adam(self.discriminator.parameters(), lr=self.config.learning_rate)
+        self.discriminator_opt = optim.Adam(self.discriminator.parameters(), lr=self.config.learning_rate_discriminator)
         
         # data augmentation
         self.aug = RandomRotateShiftsAug(self.device)
@@ -357,7 +358,7 @@ class DrQAgent_adv:
             d = self.discriminator(obs_a, next_obs_a)
             reward_d = self.reward_d_coef * torch.clamp(1 - (1/4) * torch.square(d - 1), min=0)
             
-            reward = self.delta*reward_d + (1.0 - self.delta)*reward_a
+            reward = self.delta*reward_d + (self.w_env)*reward_a
     
             self.discriminator.train()
             
@@ -421,6 +422,7 @@ class DrQAgent_adv:
             return metrics
 
         self.delta = utils.schedule(self.reward_schedule, step)
+        self.w_env = 1.0
 
         if self.delta > 0:
             batch_expert = next(replay_buffer_expert)

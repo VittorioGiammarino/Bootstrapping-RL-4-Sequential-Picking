@@ -14,10 +14,11 @@ import copy
 import pyrealsense2 as rs
 
 class Robot:
-    def __init__(self, URDF_PATH, pose_robot_base):
+    def __init__(self, URDF_PATH, pose_robot_base, parcel_chooser='Heuristic'):
         
         FLAGS = p.URDF_MERGE_FIXED_LINKS or p.URDF_USE_SELF_COLLISION
         self.robotId = p.loadURDF(URDF_PATH, pose_robot_base[0], pose_robot_base[1], useFixedBase=True, flags=FLAGS)
+        self.parcel_chooser = parcel_chooser
         
         """ Info taken from Kuka KR70 """
         self.adjust_joints_limits = 6
@@ -97,9 +98,20 @@ class Robot:
             p.resetJointState(self.robotId, self.joints[k], self.homej[k])
            
     def select_a_box(self, segm, list_of_boxes_ID):
-        j=-1
+
+        if self.parcel_chooser == 'Heuristic':
+            j=-1
+        elif self.parcel_chooser == 'Random':
+            j = np.random.choice(list_of_boxes_ID)
+        else:
+            NotImplementedError
+
+
         height_offset = 3
-        boxID = list_of_boxes_ID[j]
+        try:
+            boxID = list_of_boxes_ID[j]
+        except:
+            boxID = list_of_boxes_ID[-1]
         
         box_in_segm = np.where(segm==boxID)
         height_box_pixels = box_in_segm[0]
@@ -126,12 +138,21 @@ class Robot:
         return picking_y, picking_x, discard_box, boxID
     
     def select_box_top_pick(self, segm, list_of_boxes_ID):
-        j=-1
+
+        if self.parcel_chooser == 'Heuristic':
+            j=-1
+        elif self.parcel_chooser == 'Random':
+            j = np.random.choice(list_of_boxes_ID)
+        else:
+            NotImplementedError
         
         offset_y = 4 #7 if image size 320x320 works better
         offset_x = 4 #7
         
-        boxID = list_of_boxes_ID[j]
+        try:
+            boxID = list_of_boxes_ID[j]
+        except:
+            boxID = list_of_boxes_ID[-1]
         
         box_in_segm = np.where(segm==boxID)
         height_box_pixels = box_in_segm[0]

@@ -23,7 +23,7 @@ image_height: 160
 image_width: 160
 
 #expert data
-path2data: store_expert_data/2022.08.10/185853_GUI=false,num_episodes=1,side_pick_only=true/expert_data.pkl
+path2data: store_expert_data/2022.08.11/094020_GUI=false,num_episodes=50,side_pick_only=false/expert_data.pkl
 
 #policy to evaluate
 evaluate_only: false
