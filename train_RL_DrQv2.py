@@ -10,17 +10,23 @@ import hydra
 import torch
 import torch.optim as optim
 import time
+import pickle
 
 import pybullet as p
 import numpy as np
 from pathlib import Path
 
-import utils
+import utils_folder.utils as utils
 
-from DrQ import DrQAgent
-from task import env
-from logger import Logger
-from np_replay_buffer import EfficientReplayBuffer
+from agents.DrQv2 import DrQAgent_adv
+from sequential_picking_task.task import env
+from logger_folder.logger import Logger
+from buffers.np_replay_buffer import EfficientReplayBuffer
+from buffers.np_replay_buffer_obs_only import EfficientReplayBuffer as expert_obs_buffer
+
+def make_agent(image_shape, cfg):
+    cfg.input_shape = image_shape
+    return hydra.utils.instantiate(cfg)
 
 class Workspace:
     def __init__(self, cfg):
@@ -35,7 +41,7 @@ class Workspace:
         
         self.image_shape = (self.cfg.image_width, self.cfg.image_height, self.cfg.n_channels)
         assert self.cfg.image_width == self.cfg.image_height
-        self.agent = DrQAgent(self.cfg, self.image_shape, self.device)
+        self.agent = make_agent(self.image_shape, self.cfg.agent)
         
         self._global_step = 0
         self._global_episode = 0
@@ -46,6 +52,8 @@ class Workspace:
         self.action_shape = 1 # set by default atm, 1 action for pixel
         self.replay_buffer = EfficientReplayBuffer(self.image_shape, self.action_shape, self.cfg.replay_buffer_size, 
                                                    self.cfg.batch_size, self.cfg.nstep, self.cfg.discount, frame_stack=1)
+        self.replay_buffer_expert = expert_obs_buffer(self.image_shape, self.action_shape, self.cfg.replay_buffer_size, 
+                                                    self.cfg.batch_size, self.cfg.nstep, self.cfg.discount, frame_stack=1)
         
     @property
     def global_step(self):
@@ -56,36 +64,40 @@ class Workspace:
         return self._global_episode    
         
     def evaluate(self):
-        input_image = self.env.reset()
-        episode_reward = 0
-        start = time.time()
-        
-        while True:     
-            with torch.no_grad():
-                action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, self.global_step, eval_mode=True)
-                print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
+        step, episode, total_reward= 0, 0, 0
+        eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
+
+        while eval_until_episode(episode):
+            input_image = self.env.reset()
+            start = time.time()
             
-            action_pixel_space = (picking_pixel_y, picking_pixel_x)
-            input_image, reward, done, info = self.env.step(action_pixel_space) 
-                        
-            episode_reward+=reward
-            
-            if done:
-                break
-            
-            if self.cfg.early_stop:
-                if episode_reward<0:
-                    for i in range(len(self.env.list_of_boxes)):
-                        p.removeBody(self.env.list_of_boxes[i])
-                        p.stepSimulation()
-                        
-                    self.env.list_of_boxes = []
+            while True:     
+                with torch.no_grad():
+                    action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, eval_mode=True)
+                    print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
+                
+                action_pixel_space = (picking_pixel_y, picking_pixel_x)
+                input_image, reward, done, info = self.env.step(action_pixel_space) 
+                            
+                total_reward += reward
+                
+                if done:
                     break
-            
+                
+                if self.cfg.early_stop:
+                    if total_reward<0:
+                        for i in range(len(self.env.list_of_boxes)):
+                            p.removeBody(self.env.list_of_boxes[i])
+                            p.stepSimulation()
+                            
+                        self.env.list_of_boxes = []
+                        break
+                
         end = time.time() - start
-        print(f"Total Time: {end}, Total Reward: {episode_reward}")
+        print(f"Total Time: {end}, Total Reward: {total_reward / episode}")
+        episode_reward = total_reward/episode
         
-        return episode_reward, self.env.accuracy
+        return episode_reward
                 
     def train(self):
         
@@ -121,11 +133,11 @@ class Workspace:
                 Last = False
                 
             with torch.no_grad():
-                action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, self.global_step, eval_mode=False)
+                action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, eval_mode=False)
                 print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
                 
             if not seed_until_step(self.global_step):
-                metrics = self.agent.update(self.replay_buffer, self.global_step)
+                metrics = self.agent.update(self.replay_buffer, self.replay_buffer_expert, self.global_step)
                 
                 if self.cfg.use_tb:
                     self.logger.log_metrics(metrics, self.global_step, ty='train')
@@ -147,31 +159,17 @@ class Workspace:
     
                 if eval_every_episodes(self.global_episode):
                     print("Evaluation")
-                    eval_reward, eval_accuracy = self.evaluate()
+                    eval_reward = self.evaluate()
                     
                     if self.cfg.use_tb:
-                        self.log_episode(eval_reward, eval_accuracy)
+                        self.log_episode(eval_reward)
                     
                     if self.cfg.save_snapshot:
                         self.save_snapshot()
-                
-    def eval_only(self):
-        for _ in range(self.cfg.eval_only_iterations):
-            eval_reward, accuracy = self.env.eval_episode(self.agent)
             
-            if self.cfg.use_tb:
-                self.log_evaluation(eval_reward, accuracy)
-
-            print(f"Evaluation reward: {eval_reward}")
-            
-    def log_episode(self, eval_reward, accuracy):
+    def log_episode(self, eval_reward):
         with self.logger.log_and_dump_ctx(self.global_step, ty='eval') as log:
             log('reward_agent', eval_reward)
-            n_boxes = len(accuracy)
-            for i in range(n_boxes):
-                agent_accuracy = np.array(accuracy[i])
-                if len(agent_accuracy)==0: agent_accuracy = np.nan
-                log(f'box_{i}_accuracy_agent', agent_accuracy)
         
     def save_snapshot(self):
         snapshot = self.work_dir / 'snapshot.pt'
@@ -184,32 +182,38 @@ class Workspace:
         with snapshot.open('rb') as f:
             payload = torch.load(f)
             self.agent.load_critic(payload)
-                
-@hydra.main(config_path='cfgs_DrQ', config_name='config')
+
+    def fill_expert_buffer(self):
+        Path2Data = self.main_dir / self.cfg.path2data
+        with open(Path2Data, 'rb') as f:
+            self.dataset = pickle.load(f) 
+
+        expert_states = self.dataset["state"]
+        input_image = self.env.reset()
+        assert input_image.shape == expert_states[0].shape
+        first_obs = expert_states[0]
+        
+        time_step = first_obs.reshape((1,) + first_obs.shape)
+        self.replay_buffer_expert.add(time_step, first=True)  
+        step=1
+
+        for i in range(len(expert_states)-1):
+            obs = expert_states[1+i]
+            self.replay_buffer_expert.add_from_bio(obs)
+            step+=1 
+
+        print(f'Fill expert-replay Done! Total number of samples: {step}')
+  
+@hydra.main(config_path='config_folder', config_name='config_DrQv2')
 def main(cfg):
-    from train_RL_DrQ import Workspace as W
+    from train_RL_DrQv2 import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
-    if cfg.evaluate_only:
-        print("EVALUATE ONLY")
-        parent_dir = root_dir.parents[2]
-        snapshot = parent_dir / cfg.path2policy_eval
-        assert snapshot.exists()
-        workspace.load_snapshot(snapshot)
-        workspace.eval_only()
-    
-    elif cfg.train_from_imitation:
-        print("TRAIN FROM IMITATION")
-        parent_dir = root_dir.parents[2]
-        snapshot = parent_dir / cfg.path2policy_imit
-        assert snapshot.exists()
-        workspace.load_snapshot(snapshot)
-        workspace.train()
+    print("TRAIN LEARNING REWARD FROM EXPERT")
+    print("Loading expert observations")
+    workspace.fill_expert_buffer()
+    workspace.train()
         
-    else:
-        print("TRAIN FROM SCRATCH")
-        workspace.train()
-
 if __name__ == '__main__':
     main()
 

@@ -16,13 +16,13 @@ import pybullet as p
 import numpy as np
 from pathlib import Path
 
-import utils
+import utils_folder.utils as utils
 
-from PPO_expert_obs_adv import PPO_adv
-from task import env
-from logger import Logger
+from agents.PPO_expert_obs_adv import PPO_adv
+from sequential_picking_task.task import env
+from logger_folder.logger import Logger
 
-from np_replay_buffer_obs_only import EfficientReplayBuffer as expert_obs_buffer
+from buffers.np_replay_buffer_obs_only import EfficientReplayBuffer as expert_obs_buffer
 
 class Workspace:
     def __init__(self, cfg):
@@ -244,7 +244,7 @@ class Workspace:
 
         print(f'Fill expert-replay Done! Total number of samples: {step}')        
 
-@hydra.main(config_path='cfgs_PPO_expert_obs_adv', config_name='config')
+@hydra.main(config_path='config_folder', config_name='config_PPO_expert_obs_adv')
 def main(cfg):
     from train_RL_PPO_expert_obs_adv import Workspace as W
     root_dir = Path.cwd()

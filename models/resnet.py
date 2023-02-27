@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from einops.layers.torch import Rearrange
 
-from utils import init_xavier_weights, weight_init
+from utils_folder.utils import init_xavier_weights, weight_init
 
 def Forward3LayersConvBlock(in_channels,
                             kernel_size,
@@ -443,3 +443,88 @@ class Encoder_Decoder_ResNet43_8s(nn.Module):
 
     def get_embedding(self):
         return self.h.reshape(self.h.shape[0], -1)
+
+class Encoder(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 include_batchnorm=False):
+        """Build Resnet 43 8s."""
+        super().__init__()
+
+        if include_batchnorm:
+            self.block_short = nn.Sequential(
+                nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+            )
+        else:
+            self.block_short = nn.Sequential(
+                nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+            )
+
+        self.block_short.apply(init_xavier_weights)
+
+        self.encoder = nn.Sequential(
+            ConvBlock(64, 3, [64, 64, 64], stride=1),
+            IdentityBlock(64, 3, [64, 64, 64]),
+
+            ConvBlock(64, 3, [128, 128, 128], stride=2),
+            IdentityBlock(128, 3, [128, 128, 128]),
+
+            ConvBlock(128, 3, [256, 256, 256], stride=2),
+            IdentityBlock(256, 3, [256, 256, 256]),
+
+            ConvBlock(256, 3, [512, 512, 512], stride=2),
+            IdentityBlock(512, 3, [512, 512, 512]),
+        )
+        
+        self.encoder.apply(init_xavier_weights)
+        
+    def forward(self, x):
+
+        n, c, hg, w = x.size()
+
+        if hg == w:
+            out = self.block_short(x)
+            h = self.encoder(out)
+        else:
+            x = Rearrange('b h w c -> b c h w')(x)
+            out = self.block_short(x)
+            h = self.encoder(out)
+
+        return h
+
+class Decoder(nn.Module):
+    def __init__(self,
+                 output_dim):
+        """Build Resnet 43 8s."""
+        super().__init__()
+
+        self.decoder = nn.Sequential(
+            ConvBlock(512, 3, [256, 256, 256], stride=1),
+            IdentityBlock(256, 3, [256, 256, 256]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(256, 3, [128, 128, 128], stride=1),
+            IdentityBlock(128, 3, [128, 128, 128]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(128, 3, [64, 64, 64], stride=1),
+            IdentityBlock(64, 3, [64, 64, 64]),
+
+            nn.Upsample(scale_factor=2, mode='bilinear'),
+
+            ConvBlock(64, 3, [16, 16, output_dim], stride=1, activation=False),
+            IdentityBlock(output_dim, 3, [16, 16, output_dim], activation=False),
+
+            Rearrange('b c h w -> b h w c'),
+        )
+
+        self.decoder.apply(init_xavier_weights)
+        
+    def forward(self, h):
+        return self.decoder(h)
+

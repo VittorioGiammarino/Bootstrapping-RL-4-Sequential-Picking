@@ -14,6 +14,7 @@ import re
 
 from torch import distributions as pyd
 from torch.distributions.utils import _standard_normal
+from torch.nn import functional as F
 
 def set_seed_everywhere(seed):
     torch.manual_seed(seed)
@@ -114,3 +115,30 @@ def schedule(schdl, step):
     
 def to_torch(xs, device):
     return tuple(torch.as_tensor(x, device=device) for x in xs)
+
+class Bernoulli:
+
+  def __init__(self, dist=None):
+    super().__init__()
+    self._dist = dist
+    self.mean = dist.mean
+
+  def __getattr__(self, name):
+    return getattr(self._dist, name)
+
+  def entropy(self):
+    return self._dist.entropy()
+
+  def mode(self):
+    _mode = torch.round(self._dist.mean)
+    return _mode.detach() +self._dist.mean - self._dist.mean.detach()
+
+  def sample(self, sample_shape=()):
+    return self._dist.rsample(sample_shape)
+
+  def log_prob(self, x):
+    _logits = self._dist.base_dist.logits
+    log_probs0 = -F.softplus(_logits)
+    log_probs1 = -F.softplus(-_logits)
+
+    return log_probs0 * (1-x) + log_probs1 * x

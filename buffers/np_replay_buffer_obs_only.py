@@ -1,5 +1,5 @@
 import numpy as np
-from np_replay_buffer import AbstractReplayBuffer
+from buffers.np_replay_buffer import AbstractReplayBuffer
 
 
 class EfficientReplayBuffer(AbstractReplayBuffer):

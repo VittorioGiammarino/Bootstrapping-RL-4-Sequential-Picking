@@ -1,0 +1,18 @@
+agent:
+  _target_: agents.DrQv2.DrQAgent_adv
+  input_shape: ??? # to be specified later
+  device: ${device}
+  use_tb: ${use_tb}
+  critic_target_tau: 0.005
+  update_every_steps: 1
+  decoder_nc: 1
+  learning_rate: ${learning_rate}
+  RL: ${RL}
+  reward_d_coef: 2.0
+  imitation_learning: ${imitation_learning}
+  learning_rate_discriminator: ${learning_rate_discriminator}
+  feature_dim: ${feature_dim}
+  hidden_dim: 1024
+  augmentation: ${augmentation}
+  GAN_loss: ${GAN_loss}
+

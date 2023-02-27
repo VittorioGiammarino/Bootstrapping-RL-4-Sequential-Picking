@@ -11,8 +11,8 @@ import pybullet as p
 import numpy as np
 import time
 
-from robot import Robot, Suction, Cameras, PickPlace, PointCloud
-from boxes_generator import fill_template, generate_stack_of_boxes
+from sequential_picking_task.robot import Robot, Suction, Cameras, PickPlace, PointCloud
+from sequential_picking_task.boxes_generator import fill_template, generate_stack_of_boxes
 from pathlib import Path
 
 class env:

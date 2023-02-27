@@ -14,11 +14,11 @@ import torch
 import numpy as np
 from pathlib import Path
 
-import utils
+import utils_folder.utils as utils
 
-from learner import Learner
-from task import env
-from logger import Logger
+from agents.IL_learner import Learner
+from sequential_picking_task.task import env
+from logger_folder.logger import Logger
 
 class Workspace:
     def __init__(self, cfg):
@@ -192,7 +192,7 @@ class Workspace:
             payload = torch.load(f)
         self.agent = payload['agent']
                 
-@hydra.main(config_path='cfgs_train_from_demonstr', config_name='config')
+@hydra.main(config_path='config_folder', config_name='config_imitation_learning')
 def main(cfg):
     from train_from_demonstrations import Workspace as W
     root_dir = Path.cwd()

@@ -15,11 +15,11 @@ import pybullet as p
 import numpy as np
 from pathlib import Path
 
-import utils
+import utils_folder.utils as utils
 
-from PPO import PPO
-from task import env
-from logger import Logger
+from agents.PPO import PPO
+from sequential_picking_task.task import env
+from logger_folder.logger import Logger
 
 class Workspace:
     def __init__(self, cfg):
@@ -195,7 +195,7 @@ class Workspace:
             payload = torch.load(f)
             self.agent.load_model(payload)            
 
-@hydra.main(config_path='cfgs_PPO', config_name='config')
+@hydra.main(config_path='config_folder', config_name='config_PPO')
 def main(cfg):
     from train_RL_PPO import Workspace as W
     root_dir = Path.cwd()

@@ -13,8 +13,8 @@ import time
 import pybullet as p
 import numpy as np
 
-from robot import Robot, Suction, Cameras, PickPlace, PointCloud
-from boxes_generator import fill_template, generate_stack_of_boxes
+from sequential_picking_task.robot import Robot, Suction, Cameras, PickPlace, PointCloud
+from sequential_picking_task.boxes_generator import fill_template, generate_stack_of_boxes
 from pathlib import Path
         
 class Workspace:
@@ -227,7 +227,7 @@ class Workspace:
         pickle.dump(buffer, f)
         f.close()
         
-@hydra.main(config_path='cfgs_expert_trajs', config_name='config')
+@hydra.main(config_path='config_folder', config_name='config_generate_expert_traj')
 def main(cfg):
     from generate_expert_trajectories import Workspace as W
     workspace = W(cfg)
