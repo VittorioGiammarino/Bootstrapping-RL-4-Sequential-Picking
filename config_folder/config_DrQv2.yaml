@@ -2,7 +2,9 @@
 defaults:
   - _self_
   - agent@_global_: DrqV2
-
+  - override hydra/launcher: submitit_local
+  
+  
 #misc
 use_tb: true
 seed: 1
@@ -40,8 +42,8 @@ batch_size: 64
 #Agent
 discount: 0.99
 learning_rate: 1e-4
-critic_target_tau: 0.02
-update_every_steps: 2
+critic_target_tau: 0.005
+update_every_steps: 1
 
 #discriminator 
 GAN_loss: least-square
@@ -53,9 +55,20 @@ reward_d_coef: 2.0
 #other options
 imitation_learning: false
 RL: false
-augmentation: true
+augmentation: false
 
 hydra:
   run:
     dir: ./experiments/train_DrQv2/GAN_loss_${GAN_loss}_augmentation_${augmentation}/${now:%H%M%S}_${hydra.job.override_dirname}
+  sweep:
+    dir: ./experiments/exp_multirun_train_DrQv2/GAN_loss_${GAN_loss}_augmentation_${augmentation}/
+    subdir: ${now:%H%M%S}_${hydra.job.override_dirname}
+  launcher:
+    timeout_min: 18000000
+    cpus_per_task: 10
+    gpus_per_node: 1
+    tasks_per_node: 1
+    mem_gb: 160
+    nodes: 1
+    submitit_folder: ./experiments/exp_multirun_train_DrQv2/GAN_loss_${GAN_loss}_augmentation_${augmentation}/${now:%H%M%S}_${hydra.job.override_dirname}
 

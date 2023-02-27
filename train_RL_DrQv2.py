@@ -92,6 +92,8 @@ class Workspace:
                             
                         self.env.list_of_boxes = []
                         break
+
+            episode+=1
                 
         end = time.time() - start
         print(f"Total Time: {end}, Total Reward: {total_reward / episode}")
@@ -102,9 +104,9 @@ class Workspace:
     def train(self):
         
         print("Evaluation")
-        eval_reward, eval_accuracy = self.evaluate()
+        eval_reward = self.evaluate()
         if self.cfg.use_tb:
-            self.log_episode(eval_reward, eval_accuracy)
+            self.log_episode(eval_reward)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
