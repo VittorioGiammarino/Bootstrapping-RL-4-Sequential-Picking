@@ -4,7 +4,7 @@ defaults:
 
 #misc
 num_episodes: 10
-GUI: true
+GUI: false
 seed: 1
 
 #data
@@ -18,5 +18,5 @@ add_noise: false
 
 hydra:
   run:
-    dir: ./store_expert_data/${now:%Y.%m.%d}/${now:%H%M%S}_${hydra.job.override_dirname}
+    dir: ./store_expert_data/${now:%Y.%m.%d}
 

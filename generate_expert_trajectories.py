@@ -27,12 +27,12 @@ class Workspace:
         self.seed = self.cfg.seed
         
         self.main_dir = Path(__file__).parent
-        self.KUKA_KR70_WORKSPACE_URDF_PATH = self.main_dir / 'assets/kuka_kr10/workspace.urdf'
-        self.KUKA_KR70_PATH = self.main_dir / "assets/urdf/Kuka-KR70-URDF/urdf/Kuka-KR70-URDF.urdf"
-        self.PLANE_URDF_PATH = self.main_dir / 'assets/plane/plane.urdf'
-        self.BOX_TEMPLATE_URDF = self.main_dir / 'assets/box/box-template.urdf'
-        self.SUCTION_BASE_URDF = self.main_dir / 'assets/urdf/ur5/suction/suction-base.urdf'
-        self.SUCTION_HEAD_URDF = self.main_dir / 'assets/urdf/ur5/suction/suction-head.urdf'
+        self.KUKA_KR70_WORKSPACE_URDF_PATH = self.main_dir / 'sequential_picking_task/assets/kuka_kr10/workspace.urdf'
+        self.KUKA_KR70_PATH = self.main_dir / "sequential_picking_task/assets/urdf/Kuka-KR70-URDF/urdf/Kuka-KR70-URDF.urdf"
+        self.PLANE_URDF_PATH = self.main_dir / 'sequential_picking_task/assets/plane/plane.urdf'
+        self.BOX_TEMPLATE_URDF = self.main_dir / 'sequential_picking_task/assets/box/box-template.urdf'
+        self.SUCTION_BASE_URDF = self.main_dir / 'sequential_picking_task/assets/urdf/ur5/suction/suction-base.urdf'
+        self.SUCTION_HEAD_URDF = self.main_dir / 'sequential_picking_task/assets/urdf/ur5/suction/suction-head.urdf'
         
         if self.cfg.GUI:
             p.connect(p.GUI) #for image simulation
@@ -85,7 +85,8 @@ class Workspace:
     
     def store(self):
         buffer = {}
-        buffer["state"] = []
+        buffer["image"] = []
+        buffer["segm"] = []
         buffer["action"] = []
         buffer["top pick"] = []
         buffer["reward"] = []
@@ -175,7 +176,8 @@ class Workspace:
                                 episode_reward+=reward
                                 print("Good Job, +1 reward")
                                 
-                                buffer["state"].append(camera_view_resized)
+                                buffer["image"].append(camera_view_resized)
+                                buffer["segm"].append(segm_resized.reshape(segm_resized.shape[0], segm_resized.shape[1], 1))
                                 buffer["action"].append([picking_pixel_y, picking_pixel_x])
                                 buffer["top pick"].append(top_pick)
                                 buffer["reward"].append(reward)

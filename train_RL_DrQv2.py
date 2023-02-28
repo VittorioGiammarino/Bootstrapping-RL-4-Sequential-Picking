@@ -39,6 +39,9 @@ class Workspace:
         utils.set_seed_everywhere(cfg.seed)
         self.device = self.cfg.device
         
+        if self.cfg.from_segm:
+            self.cfg.n_channels = 1
+        
         self.image_shape = (self.cfg.image_width, self.cfg.image_height, self.cfg.n_channels)
         assert self.cfg.image_width == self.cfg.image_height
         self.agent = make_agent(self.image_shape, self.cfg.agent)
@@ -52,6 +55,7 @@ class Workspace:
         self.action_shape = 1 # set by default atm, 1 action for pixel
         self.replay_buffer = EfficientReplayBuffer(self.image_shape, self.action_shape, self.cfg.replay_buffer_size, 
                                                    self.cfg.batch_size, self.cfg.nstep, self.cfg.discount, frame_stack=1)
+
         self.replay_buffer_expert = expert_obs_buffer(self.image_shape, self.action_shape, self.cfg.replay_buffer_size, 
                                                     self.cfg.batch_size, self.cfg.nstep, self.cfg.discount, frame_stack=1)
         
@@ -66,18 +70,28 @@ class Workspace:
     def evaluate(self):
         step, episode, total_reward= 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
+        start = time.time()
 
         while eval_until_episode(episode):
-            input_image = self.env.reset()
-            start = time.time()
+            input_image, input_segm = self.env.reset()
+
+            if self.cfg.from_segm:
+                state = input_segm
+            else:
+                state = input_image
             
             while True:     
                 with torch.no_grad():
-                    action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, eval_mode=True)
+                    action, picking_pixel_y, picking_pixel_x = self.agent.act(state, eval_mode=True)
                     print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
                 
                 action_pixel_space = (picking_pixel_y, picking_pixel_x)
-                input_image, reward, done, info = self.env.step(action_pixel_space) 
+                input_image, input_segm, reward, done, info = self.env.step(action_pixel_space)
+                
+                if self.cfg.from_segm:
+                    state = input_segm
+                else:
+                    state = input_image
                             
                 total_reward += reward
                 
@@ -103,10 +117,10 @@ class Workspace:
                 
     def train(self):
         
-        print("Evaluation")
-        eval_reward = self.evaluate()
-        if self.cfg.use_tb:
-            self.log_episode(eval_reward)
+        #print("Evaluation")
+        #eval_reward = self.evaluate()
+        #if self.cfg.use_tb:
+        #    self.log_episode(eval_reward)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
@@ -115,9 +129,14 @@ class Workspace:
         eval_every_episodes = utils.Every(self.cfg.eval_every_episodes)
         seed_until_step = utils.Until(self.cfg.num_seed_steps)
         
-        input_image = self.env.reset()
+        input_image, input_segm = self.env.reset()
+
+        if self.cfg.from_segm:
+            state = input_segm
+        else:
+            state = input_image
         
-        time_step = input_image.reshape((1,) + input_image.shape)
+        time_step = state.reshape((1,) + state.shape)
         self.replay_buffer.add(time_step, first=True)
         episode_step = 0 
         episode_reward = 0
@@ -127,15 +146,22 @@ class Workspace:
         while train_until_step(self.global_step):
                         
             if Last: # reset environment
-                input_image = self.env.reset()
-                time_step = input_image.reshape((1,) + input_image.shape)
+                input_image, input_segm = self.env.reset()
+
+                if self.cfg.from_segm:
+                    state = input_segm
+                else:
+                    state = input_image
+                
+                time_step = state.reshape((1,) + state.shape)
+
                 self.replay_buffer.add(time_step, first=True)
                 episode_step = 0 
                 episode_reward = 0
                 Last = False
                 
             with torch.no_grad():
-                action, picking_pixel_y, picking_pixel_x = self.agent.act(input_image, eval_mode=False)
+                action, picking_pixel_y, picking_pixel_x = self.agent.act(state, eval_mode=False)
                 print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
                 
             if not seed_until_step(self.global_step):
@@ -146,10 +172,15 @@ class Workspace:
                 
             # take env step
             action_pixel_space = (picking_pixel_y, picking_pixel_x)
-            input_image, reward, done, info = self.env.step(action_pixel_space)
+            input_image, input_segm, reward, done, info = self.env.step(action_pixel_space)
+            
+            if self.cfg.from_segm:
+                state = input_segm
+            else:
+                state = input_image
             
             full_action = np.array([[action.item()]])
-            time_step = (input_image, full_action, reward, self.cfg.discount)
+            time_step = (state, full_action, reward, self.cfg.discount)
             episode_reward += reward
             self.replay_buffer.add(time_step)
             episode_step += 1
@@ -190,11 +221,19 @@ class Workspace:
         with open(Path2Data, 'rb') as f:
             self.dataset = pickle.load(f) 
 
-        expert_states = self.dataset["state"]
-        input_image = self.env.reset()
-        assert input_image.shape == expert_states[0].shape
+        input_image, input_segm = self.env.reset()
+
+        if self.cfg.from_segm:
+            print("learn from instance segm")
+            expert_states = self.dataset["segm"]
+            assert input_segm.shape == expert_states[0].shape
+
+        else:
+            print("learn from image")
+            expert_states = self.dataset["image"]
+            assert input_image.shape == expert_states[0].shape
+
         first_obs = expert_states[0]
-        
         time_step = first_obs.reshape((1,) + first_obs.shape)
         self.replay_buffer_expert.add(time_step, first=True)  
         step=1
@@ -211,7 +250,6 @@ def main(cfg):
     from train_RL_DrQv2 import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
-    print("TRAIN LEARNING REWARD FROM EXPERT")
     print("Loading expert observations")
     workspace.fill_expert_buffer()
     workspace.train()

@@ -13,7 +13,7 @@ GUI: false
 save_snapshot: false
 
 # pre-initialize policy using a policy learnt from demonstr
-path2data: store_expert_data/2022.08.02/100034_GUI=false/expert_data.pkl
+path2data: store_expert_data/2023.02.28/expert_data.pkl
 
 # train settings
 num_seed_steps: 100
@@ -29,6 +29,9 @@ add_noise: false
 image_width: 160
 image_height: 160
 n_channels: 3
+
+#options env
+from_segm: false
 
 # eval
 eval_every_episodes: 10

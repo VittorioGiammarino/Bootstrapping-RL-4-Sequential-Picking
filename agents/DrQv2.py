@@ -59,12 +59,13 @@ class RandomShiftsAug(nn.Module):
                              align_corners=False)
 
 class Encoder(nn.Module):
-    def __init__(self, input_shape, device):
+    def __init__(self, input_shape, device, from_segm):
         super().__init__()
 
         self.repr_dim = 512*20*20
         
         self.device = device
+        self.from_segm = from_segm
         
         self.in_shape = input_shape
         max_dim = np.max(self.in_shape[:2])
@@ -77,8 +78,17 @@ class Encoder(nn.Module):
 
     def forward(self, input_img):
 
-        if len(input_img.shape)==3:
-            input_img = self.resize_input_img(input_img)
+        if self.from_segm:
+            if len(input_img.shape)==3:
+                input_img = self.resize_segm(input_img)
+            elif len(input_img.shape)==4:
+                input_img = self.process_img(input_img)
+            
+        else:
+            if len(input_img.shape)==3:
+                input_img = self.resize_input_img(input_img)
+            elif len(input_img.shape)==4:
+                input_img = self.process_img(input_img)
 
         in_tens = torch.split(input_img, 1, dim=0)
 
@@ -106,6 +116,14 @@ class Encoder(nn.Module):
         
         in_data = np.pad(input_img, self.padding, mode='constant')
         in_data_processed = self.process_img(in_data)
+        in_shape = (1,) + in_data_processed.shape
+        in_data_processed = in_data_processed.reshape(in_shape)
+        in_tens = torch.tensor(in_data_processed, dtype=torch.float32).to(self.device)
+            
+        return in_tens  
+
+    def resize_segm(self, input_img):
+        in_data_processed = np.pad(input_img, self.padding, mode='constant')
         in_shape = (1,) + in_data_processed.shape
         in_data_processed = in_data_processed.reshape(in_shape)
         in_tens = torch.tensor(in_data_processed, dtype=torch.float32).to(self.device)
@@ -174,17 +192,18 @@ class Discriminator(nn.Module):
 class DrQAgent_adv:
     def __init__(self, input_shape, device, use_tb, critic_target_tau, update_every_steps, decoder_nc, learning_rate, 
                 reward_d_coef, imitation_learning, RL, learning_rate_discriminator, feature_dim, hidden_dim, augmentation,
-                GAN_loss='bce'):
+                GAN_loss='bce', from_segm=False):
         
         self.device = device
         self.use_tb = use_tb
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
         self.GAN_loss = GAN_loss
+        self.from_segm = from_segm
         
         output_channels = decoder_nc
 
-        self.encoder = Encoder(input_shape, device).to(self.device)
+        self.encoder = Encoder(input_shape, device, from_segm).to(self.device)
 
 
         if self.GAN_loss == 'least-square':

@@ -80,7 +80,8 @@ class env:
         self.color_image, _, self.segm = self.kuka.crop_camera_images(self.color_image, self.depth, self.segm)
         camera_view_resized, segm_resized = self.kuka.resize_camera_images(self.color_image, self.segm, resize=self.resized_img_dim)
         input_image = camera_view_resized
-        return input_image
+        input_segm = segm_resized.reshape(segm_resized.shape[0], segm_resized.shape[1], 1)
+        return input_image, input_segm
     
     def update_point_cloud(self):
         _, xyz_reshaped = self.point_cloud_generator.point_cloud_world_frame(self.depth)
@@ -155,7 +156,7 @@ class env:
                 p.removeBody(box_to_discard_ID)
                 self.list_of_boxes.remove(box_to_discard_ID) 
                 
-        input_image = self.get_image()
+        input_image, input_semg = self.get_image()
         self.update_point_cloud()
         
         if len(self.list_of_boxes)==0:
@@ -163,7 +164,7 @@ class env:
         else:
             done = False
                     
-        return input_image, reward, done, []
+        return input_image, input_semg, reward, done, []
                              
     def reset(self):
         p.resetSimulation()
@@ -174,10 +175,10 @@ class env:
         
         self.accuracy = [[] for a in range(self.container_length*self.container_height)]
         self.min_ID_boxes = min(self.list_of_boxes)
-        input_image = self.get_image()
+        input_image, input_segm = self.get_image()
         self.update_point_cloud()
         
-        return input_image
+        return input_image, input_segm
         
     def eval_episode(self, agent):
         input_image = self.reset()
