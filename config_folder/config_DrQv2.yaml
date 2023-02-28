@@ -37,7 +37,7 @@ num_eval_episodes: 3
 # replay buffer
 replay_buffer_size: ${num_train_steps}
 nstep: 1
-batch_size: 64
+batch_size: 16
 
 #Agent
 discount: 0.99
