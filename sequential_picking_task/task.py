@@ -35,6 +35,8 @@ class env:
             print("This reward provides additional bonus if successful picking happens at certain height")
         else:
             print("Standard reward: +1-accuracy for picking, 0 otherwise")
+
+        self.info = {}
         
         if self.cfg.GUI:
             p.connect(p.GUI) #for image simulation
@@ -133,6 +135,7 @@ class env:
                         reward = 1-self.cfg.accuracy_error_weight*accuracy_error
 
                     print(f"Good Job, {reward:.3f} reward")
+                    self.info["num_picked_boxes"]+=1
                     
                     self.accuracy[suctioned_object-self.min_ID_boxes].append(accuracy_error)
                     
@@ -174,7 +177,7 @@ class env:
         else:
             done = False
                     
-        return input_image, input_semg, reward, done, []
+        return input_image, input_semg, reward, done, self.info
                              
     def reset(self):
         p.resetSimulation()
@@ -187,6 +190,8 @@ class env:
         self.min_ID_boxes = min(self.list_of_boxes)
         input_image, input_segm = self.get_image()
         self.update_point_cloud()
+
+        self.info["num_picked_boxes"]=0
         
         return input_image, input_segm
         

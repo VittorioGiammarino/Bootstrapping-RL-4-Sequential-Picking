@@ -67,7 +67,7 @@ class Workspace:
         return self._global_episode    
         
     def evaluate(self):
-        step, episode, total_reward= 0, 0, 0
+        step, episode, total_reward, number_picks= 0, 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
         start = time.time()
 
@@ -93,6 +93,7 @@ class Workspace:
                     state = input_image
                             
                 total_reward += reward
+                number_picks += info["num_picked_boxes"]
                 
                 if done:
                     break
@@ -111,15 +112,16 @@ class Workspace:
         end = time.time() - start
         print(f"Total Time: {end}, Total Reward: {total_reward / episode}")
         episode_reward = total_reward/episode
+        avg_picks_per_episode = number_picks/episode
         
-        return episode_reward
+        return episode_reward, avg_picks_per_episode
                 
     def train(self):
         
         print("Evaluation")
-        eval_reward = self.evaluate()
+        eval_reward, avg_picks_per_episode = self.evaluate()
         if self.cfg.use_tb:
-            self.log_episode(eval_reward)
+            self.log_episode(eval_reward, avg_picks_per_episode)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
@@ -199,9 +201,10 @@ class Workspace:
                     if self.cfg.save_snapshot:
                         self.save_snapshot()
             
-    def log_episode(self, eval_reward):
+    def log_episode(self, eval_reward, avg_picks_per_episode):
         with self.logger.log_and_dump_ctx(self.global_step, ty='eval') as log:
             log('reward_agent', eval_reward)
+            log('avg_picks_per_episode', avg_picks_per_episode)
         
     def save_snapshot(self):
         snapshot = self.work_dir / 'snapshot.pt'
