@@ -1,0 +1,14 @@
+agent:
+  _target_: agents.REDQv2.REDQAgent
+  input_shape: ??? # to be specified later
+  device: ${device}
+  use_tb: ${use_tb}
+  critic_target_tau: ${critic_target_tau}
+  decoder_nc: 1
+  learning_rate: ${learning_rate}
+  num_Q: ${num_Q}
+  num_min: ${num_min}
+  num_update: ${num_update}
+  augmentation: ${augmentation}
+  from_segm: ${from_segm}
+

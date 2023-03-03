@@ -18,7 +18,6 @@ from pathlib import Path
 
 import utils_folder.utils as utils
 
-from agents.DrQv2 import DrQAgent_adv
 from sequential_picking_task.task import env
 from logger_folder.logger import Logger
 from buffers.np_replay_buffer import EfficientReplayBuffer
@@ -117,10 +116,10 @@ class Workspace:
                 
     def train(self):
         
-        print("Evaluation")
-        eval_reward = self.evaluate()
-        if self.cfg.use_tb:
-            self.log_episode(eval_reward)
+        #print("Evaluation")
+        #eval_reward = self.evaluate()
+        #if self.cfg.use_tb:
+        #    self.log_episode(eval_reward)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()

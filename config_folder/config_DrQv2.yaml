@@ -60,6 +60,11 @@ imitation_learning: false
 RL: false
 augmentation: false
 
+#REDQ options
+num_Q: 10
+num_min: 2
+num_update: 5
+
 hydra:
   run:
     dir: ./experiments/train_DrQv2/GAN_loss_${GAN_loss}_augmentation_${augmentation}/${now:%H%M%S}_${hydra.job.override_dirname}
