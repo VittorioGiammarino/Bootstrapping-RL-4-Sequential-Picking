@@ -121,7 +121,12 @@ class env:
                     print(f"List of boxes ID: {self.list_of_boxes}")
                     p.removeBody(suctioned_object)
                     self.list_of_boxes.remove(suctioned_object)
-                    reward = 1-self.cfg.accuracy_error_weight*accuracy_error
+
+                    if self.cfg.reward_id == 0:
+                        reward = (1-self.cfg.accuracy_error_weight*accuracy_error)*position0[2]
+                    else:
+                        reward = 1-self.cfg.accuracy_error_weight*accuracy_error
+
                     print(f"Good Job, {reward:.3f} reward")
                     
                     self.accuracy[suctioned_object-self.min_ID_boxes].append(accuracy_error)
