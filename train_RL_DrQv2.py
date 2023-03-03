@@ -116,10 +116,10 @@ class Workspace:
                 
     def train(self):
         
-        #print("Evaluation")
-        #eval_reward = self.evaluate()
-        #if self.cfg.use_tb:
-        #    self.log_episode(eval_reward)
+        print("Evaluation")
+        eval_reward = self.evaluate()
+        if self.cfg.use_tb:
+            self.log_episode(eval_reward)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
