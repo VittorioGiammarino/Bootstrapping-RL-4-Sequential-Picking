@@ -30,6 +30,11 @@ class env:
         self.BOX_TEMPLATE_URDF = self.main_dir / 'assets/box/box-template.urdf'
         self.SUCTION_BASE_URDF = self.main_dir / 'assets/urdf/ur5/suction/suction-base.urdf'
         self.SUCTION_HEAD_URDF = self.main_dir / 'assets/urdf/ur5/suction/suction-head.urdf'
+
+        if self.cfg.reward_id==1:
+            print("This reward provides additional bonus if successful picking happens at certain height")
+        else:
+            print("Standard reward: +1-accuracy for picking, 0 otherwise")
         
         if self.cfg.GUI:
             p.connect(p.GUI) #for image simulation
@@ -122,7 +127,7 @@ class env:
                     p.removeBody(suctioned_object)
                     self.list_of_boxes.remove(suctioned_object)
 
-                    if self.cfg.reward_id == 0:
+                    if self.cfg.reward_id == 1:
                         reward = (1-self.cfg.accuracy_error_weight*accuracy_error)*position0[2]
                     else:
                         reward = 1-self.cfg.accuracy_error_weight*accuracy_error

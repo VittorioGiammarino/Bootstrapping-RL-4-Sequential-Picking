@@ -29,6 +29,7 @@ add_noise: false
 image_width: 160
 image_height: 160
 n_channels: 3
+reward_id: 0
 
 #options env
 from_segm: false
