@@ -93,7 +93,6 @@ class Workspace:
                     state = input_image
                             
                 total_reward += reward
-                number_picks += info["num_picked_boxes"]
                 
                 if done:
                     break
@@ -108,6 +107,7 @@ class Workspace:
                         break
 
             episode+=1
+            number_picks += info["num_picked_boxes"]
                 
         end = time.time() - start
         print(f"Total Time: {end}, Total Reward: {total_reward / episode}")
@@ -118,10 +118,10 @@ class Workspace:
                 
     def train(self):
         
-        print("Evaluation")
-        eval_reward, avg_picks_per_episode = self.evaluate()
-        if self.cfg.use_tb:
-            self.log_episode(eval_reward, avg_picks_per_episode)
+        #print("Evaluation")
+        #eval_reward, avg_picks_per_episode = self.evaluate()
+        #if self.cfg.use_tb:
+        #    self.log_episode(eval_reward, avg_picks_per_episode)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
@@ -193,10 +193,10 @@ class Workspace:
     
                 if eval_every_episodes(self.global_episode):
                     print("Evaluation")
-                    eval_reward = self.evaluate()
+                    eval_reward, avg_picks_per_episode = self.evaluate()
                     
                     if self.cfg.use_tb:
-                        self.log_episode(eval_reward)
+                        self.log_episode(eval_reward, avg_picks_per_episode)
                     
                     if self.cfg.save_snapshot:
                         self.save_snapshot()

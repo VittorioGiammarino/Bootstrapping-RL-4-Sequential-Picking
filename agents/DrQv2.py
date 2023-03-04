@@ -253,8 +253,6 @@ class DrQAgent_adv:
         if eval_mode:
             target_Q1, target_Q2 = self.critic_target(obs)         
             target_V = torch.min(target_Q1, target_Q2)
-
-            print(target_V.shape)
             
             pick_conf = nn.Softmax(dim=1)(target_V)
             pi = Categorical(probs = pick_conf)
