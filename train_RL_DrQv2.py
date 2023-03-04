@@ -118,10 +118,10 @@ class Workspace:
                 
     def train(self):
         
-        #print("Evaluation")
-        #eval_reward, avg_picks_per_episode = self.evaluate()
-        #if self.cfg.use_tb:
-        #    self.log_episode(eval_reward, avg_picks_per_episode)
+        print("Evaluation")
+        eval_reward, avg_picks_per_episode = self.evaluate()
+        if self.cfg.use_tb:
+            self.log_episode(eval_reward, avg_picks_per_episode)
         
         if self.cfg.save_snapshot:
             self.save_snapshot()
