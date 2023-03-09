@@ -57,7 +57,7 @@ hydra:
     dir: ./experiments/train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}/${now:%H%M%S}_${hydra.job.override_dirname}
   sweep:
     dir: ./experiments/multirun_train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}/
-    subdir: ${now:%H%M%S}_${hydra.job.override_dirname}
+    subdir: ${now:%Y.%m.%d}_${now:%H%M%S}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
     cpus_per_task: 10
