@@ -42,7 +42,7 @@ class Robot:
         self.placing_pose = ((0.35, -1, 1.5), p.getQuaternionFromEuler((0, np.pi/2, 0))) #0.35, -0.779, 1.5
         self.out_of_camera = ((0.35, -1, 0.5), p.getQuaternionFromEuler((0, np.pi/2, 0)))
         
-        self.workspace = [[0.5, 2.5], [-1, 1], [0, 2.5]]
+        self.workspace = [[0.5, 2.5], [-1, 1], [0.14, 2.5]]
             
     def solve_ik(self, targetPose):
         targj = p.calculateInverseKinematics(bodyUniqueId=self.robotId,
@@ -78,7 +78,7 @@ class Robot:
                                         positionGains=gains)       
             p.stepSimulation()
             
-        print(f'Warning: movej exceeded {timeout} second timeout. Skipping.')
+        print(f'Warning: movej exceeded {timeout} seconds timeout. Skipping.')
         return True
     
     def movep(self, pose, speed=0.008):
@@ -105,7 +105,6 @@ class Robot:
             j = np.random.choice(list_of_boxes_ID)
         else:
             NotImplementedError
-
 
         height_offset = 3
         try:

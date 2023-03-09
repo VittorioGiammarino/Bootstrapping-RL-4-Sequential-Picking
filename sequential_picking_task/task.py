@@ -56,6 +56,8 @@ class env:
         
         self.resized_img_dim = (input_shape[1], input_shape[0])
 
+        self.initialize_robot()
+
     def initialize_robot(self):
         if not self.robot_in_the_scene:
             self.planeID = p.loadURDF(self.PLANE_URDF_PATH.as_posix(), useFixedBase=1)
@@ -150,7 +152,7 @@ class env:
                 self.homing_not_succeeded = True
                 speed = 0.03
                 reward = 0
-                print(f"Somthing went wrong, {reward} reward")
+                print(f"Something went wrong, {reward} reward")
                 while self.homing_not_succeeded:
                     self.kuka.homing_joint_control()
                     self.homing_not_succeeded = self.kuka.placing_out_of_camera(speed)
@@ -163,6 +165,7 @@ class env:
             speed = 0.03
             reward = 0
             print(f"Selected point out of safety workspace, {reward} reward")
+            self.info["num_out_workspace"]+=1
             while self.homing_not_succeeded:
                 self.kuka.homing_joint_control()
                 self.homing_not_succeeded = self.kuka.placing_out_of_camera(speed)
@@ -193,6 +196,7 @@ class env:
         self.update_point_cloud()
 
         self.info["num_picked_boxes"]=0
+        self.info["num_out_workspace"]=0
         
         return input_image, input_segm
         

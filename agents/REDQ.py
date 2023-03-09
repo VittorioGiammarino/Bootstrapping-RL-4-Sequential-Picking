@@ -19,44 +19,9 @@ from torch import distributions as torchd
 import utils_folder.utils as utils
 
 from models.resnet import Encoder as encoder_net
-from models.resnet import Decoder, MLP, Discriminator
+from models.resnet import Decoder
 from einops.layers.torch import Rearrange
 from torch.distributions.categorical import Categorical
-from utils_folder.utils import Bernoulli
-
-class RandomShiftsAug(nn.Module):
-    def __init__(self, pad):
-        super().__init__()
-        self.pad = pad
-
-    def forward(self, x):
-        x = Rearrange('b h w c -> b c h w')(x)
-        n, c, h, w = x.size()
-        assert h == w
-        padding = tuple([self.pad] * 4)
-        x = F.pad(x, padding, 'replicate')
-        eps = 1.0 / (h + 2 * self.pad)
-        arange = torch.linspace(-1.0 + eps,
-                                1.0 - eps,
-                                h + 2 * self.pad,
-                                device=x.device,
-                                dtype=x.dtype)[:h]
-        arange = arange.unsqueeze(0).repeat(h, 1).unsqueeze(2)
-        base_grid = torch.cat([arange, arange.transpose(1, 0)], dim=2)
-        base_grid = base_grid.unsqueeze(0).repeat(n, 1, 1, 1)
-
-        shift = torch.randint(0,
-                              2 * self.pad + 1,
-                              size=(n, 1, 1, 2),
-                              device=x.device,
-                              dtype=x.dtype)
-        shift *= 2.0 / (h + 2 * self.pad)
-
-        grid = base_grid + shift
-        return F.grid_sample(x,
-                             grid,
-                             padding_mode='zeros',
-                             align_corners=False)
 
 class Encoder(nn.Module):
     def __init__(self, input_shape, device, from_segm):
@@ -77,21 +42,12 @@ class Encoder(nn.Module):
         self.apply(utils.init_xavier_weights)
 
     def forward(self, input_img):
-
-        if self.from_segm:
-            if len(input_img.shape)==3:
-                input_img = self.resize_segm(input_img)
-            elif len(input_img.shape)==4:
-                input_img = self.process_img(input_img)
-            
-        else:
-            if len(input_img.shape)==3:
-                input_img = self.resize_input_img(input_img)
-            elif len(input_img.shape)==4:
-                input_img = self.process_img(input_img)
+        if len(input_img.shape)==3:
+            input_img = self.resize_input_img(input_img)
+        elif len(input_img.shape)==4:
+            input_img = self.process_img(input_img)
 
         in_tens = torch.split(input_img, 1, dim=0)
-
         h = ()
         
         for x in in_tens:
@@ -113,7 +69,6 @@ class Encoder(nn.Module):
         return img
     
     def resize_input_img(self, input_img):
-        
         in_data = np.pad(input_img, self.padding, mode='constant')
         in_data_processed = self.process_img(in_data)
         in_shape = (1,) + in_data_processed.shape
@@ -157,36 +112,11 @@ class Critic(nn.Module):
         output = Rearrange('b h w c -> b (h w c)')(logits)
         
         return output
-
-class Discriminator(nn.Module):
-    def __init__(self, repr_dim, feature_dim, input_net_dim, hidden_dim, dist=None):
-        super().__init__()
-                
-        self.dist = dist
-        self._shape = (1,)
-        self.repr_dim = repr_dim
-        self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
-                                   nn.LayerNorm(feature_dim), nn.Tanh())
         
-        self.net = nn.Sequential(nn.Linear(input_net_dim, hidden_dim),
-                                    nn.ReLU(inplace=True),
-                                    nn.Linear(hidden_dim, hidden_dim),
-                                    nn.ReLU(inplace=True),
-                                    nn.Linear(hidden_dim, 1))  
-        
-        self.apply(utils.weight_init)
-       
-    def forward(self, transition):
-        d = self.net(self.trunk(transition))
-
-        if self.dist == 'binary':
-            return Bernoulli(torchd.independent.Independent(torchd.bernoulli.Bernoulli(logits=d), len(self._shape)))
-        else:
-            return d 
-        
-class REDQAgent:
-    def __init__(self, input_shape, device, use_tb, critic_target_tau, decoder_nc, learning_rate, 
-                num_Q, num_min, num_update, augmentation, from_segm=False):
+class REDQ_Agent:
+    def __init__(self, input_shape, workspace, device, use_tb, critic_target_tau, decoder_nc, learning_rate, 
+                num_Q, num_min, num_update, exploration_rate, num_expl_steps, from_segm=False,
+                safety_mask=False):
         
         self.device = device
         self.use_tb = use_tb
@@ -195,9 +125,13 @@ class REDQAgent:
         self.num_Q = num_Q
         self.num_min = num_min
         self.num_update = num_update
+
+        self.workspace = workspace
+        self.exploration_rate = exploration_rate
+        self.num_expl_steps = num_expl_steps
+        self.safety_mask = safety_mask
         
         output_channels = decoder_nc
-
         self.encoder = Encoder(input_shape, device, from_segm).to(self.device)
         print("Training using only exogenous reward")
 
@@ -215,10 +149,6 @@ class REDQAgent:
         self.optimizer_critic_list = []
         for Q in range(self.num_Q):
             self.optimizer_critic_list.append(optim.Adam(self.critic_list[Q].parameters(), lr=learning_rate))
-
-        # data augmentation
-        self.augmentation = augmentation
-        self.aug = RandomShiftsAug(pad=8)
         
         self.train()
         
@@ -226,61 +156,158 @@ class REDQAgent:
         self.training = training 
         for q in range(self.num_Q):
             self.critic_list[q].train(training)
+
+    def check_in_workspace(self, cartesian_position_box):
+        in_workspace = False
+        x = cartesian_position_box[0]
+        y = cartesian_position_box[1]
+        z = cartesian_position_box[2]
         
-    def act(self, input_image, eval_mode=True):
+        if x>=self.workspace[0][0] and x<=self.workspace[0][1]:
+            if y>=self.workspace[1][0] and y<=self.workspace[1][1]:
+                if z>=self.workspace[2][0] and z<=self.workspace[2][1]:
+                    in_workspace = True
+                    
+        return in_workspace
+
+    def compute_safety_mask(self, target_V, xyz, input_image_shape):
+
+        num_pixels = target_V.shape[1]
+        mask = torch.ones([1, num_pixels], dtype=torch.float).to(self.device)
+        valid = torch.zeros([1, num_pixels], dtype=torch.int).to(self.device)
+
+        for i in range(num_pixels):
+            matrix_pixels = target_V.reshape(input_image_shape)
+            index_reshaped = np.unravel_index(i, shape=matrix_pixels.shape)
+            pick = index_reshaped[:2]
+            pick_y = int(pick[0])
+            pick_x = int(pick[1]) 
+            pick_position = xyz[pick_y, pick_x]
+
+            in_workspace = self.check_in_workspace(pick_position)
+
+            if in_workspace:
+                valid[0,i] = 1
+                mask[0,i] = +100
+            else:
+                mask[0,i] = -100
+
+        return mask, valid
+        
+    def act(self, input_image, xyz, step, eval_mode=True):
 
         obs = self.encoder(input_image)
+        input_image_shape = input_image.shape[:2]
+        target_Q_list = []
+        for i in range(self.num_Q):
+            target_Q = self.critic_target_list[i](obs).reshape(-1,1)
+            target_Q_list.append(target_Q)
+
+        target_Q_cat = torch.cat(target_Q_list,-1)
+        target_V, _ = torch.min(target_Q_cat, dim=-1)
+        target_V = target_V.reshape(1,-1)
                     
         if eval_mode:
+            action, picking_y, picking_x = self.act_eval(target_V, xyz, input_image_shape)
 
-            target_Q_list = []
-            for i in range(self.num_Q):
-                target_Q = self.critic_target_list[i](obs).reshape(-1,1)
-                target_Q_list.append(target_Q)
-
-            target_Q_cat = torch.cat(target_Q_list,-1)
-            target_V, _ = torch.min(target_Q_cat, dim=-1)
-            target_V = target_V.reshape(1,-1)
-            
-            pick_conf = nn.Softmax(dim=1)(target_V)
-            pi = Categorical(probs = pick_conf)
-            
-            pick_conf = pick_conf.detach().cpu().numpy()
-            pick_conf = np.float32(pick_conf).reshape(input_image.shape[:2])
-
-            #this one works cause we are processing a single image at the time during eval mode        
-            action = np.argmax(pick_conf) 
-            action = np.unravel_index(action, shape=pick_conf.shape)
-            
-            picking_pixel = action[:2]
-            picking_y = picking_pixel[0]
-            picking_x = picking_pixel[1]               
+        elif step <= self.num_expl_steps:
+            action, picking_y, picking_x = self.explore(target_V, xyz, input_image_shape)
             
         else:
+            action, picking_y, picking_x = self.act_training(target_V, xyz, input_image_shape)
             
-            target_Q_list = []
-            for i in range(self.num_Q):
-                target_Q = self.critic_target_list[i](obs).reshape(-1,1)
-                target_Q_list.append(target_Q)
+        return action, picking_y, picking_x
 
-            target_Q_cat = torch.cat(target_Q_list,-1)
-            target_V, _ = torch.min(target_Q_cat, dim=-1)
-            target_V = target_V.reshape(1,-1)
+    def act_eval(self, target_V, xyz, input_image_shape):
 
+        if self.safety_mask:
+            mask, _ = self.compute_safety_mask(target_V, xyz, input_image_shape)
+            pick_conf = target_V + mask
+
+        else:
             pick_conf = target_V
-            pi = Categorical(logits = pick_conf)
-            
-            action = pi.sample()
-            action_numpy = action.detach().cpu().numpy()
-            pick_conf = pick_conf.reshape(input_image.shape[:2])
-            action_reshaped = np.unravel_index(action_numpy, shape=pick_conf.shape)
-            
-            picking_pixel = action_reshaped[:2]
-            picking_y = int(picking_pixel[0])
-            picking_x = int(picking_pixel[1])
 
-            action = action_numpy
-            
+        pick_conf = pick_conf.detach().cpu().numpy()
+        pick_conf = np.float32(pick_conf).reshape(input_image_shape)
+
+        #this one works cause we are processing a single image at the time during eval mode        
+        action = np.argmax(pick_conf) 
+        action = np.unravel_index(action, shape=pick_conf.shape)
+        
+        picking_pixel = action[:2]
+        picking_y = picking_pixel[0]
+        picking_x = picking_pixel[1]   
+
+        return action, picking_y, picking_x
+
+    def explore(self, target_V, xyz, input_image_shape):
+        print("Explore")
+
+        if self.safety_mask:
+            _, valid = self.compute_safety_mask(target_V, xyz, input_image_shape)
+            try:
+                valid = valid.detach().cpu().numpy()
+                action_numpy = np.random.choice(valid.nonzero()[1], size=1)
+            except:
+                num_pixels = target_V.shape[1]
+                action_numpy = np.random.randint(num_pixels, size=(1,))
+
+        else:
+            num_pixels = target_V.shape[1]
+            action_numpy = np.random.randint(num_pixels, size=(1,))
+
+        action_reshaped = np.unravel_index(action_numpy, shape=input_image_shape)
+        
+        picking_pixel = action_reshaped[:2]
+        picking_y = int(picking_pixel[0])
+        picking_x = int(picking_pixel[1])
+
+        action = action_numpy
+
+        return action, picking_y, picking_x
+
+    def act_training(self, target_V, xyz, input_image_shape):
+
+        pick_conf = torch.clone(target_V)
+        expl_rv = np.random.rand()
+
+        if self.safety_mask:
+            mask, valid = self.compute_safety_mask(target_V, xyz, input_image_shape)
+
+            if expl_rv <= self.exploration_rate:
+                print("Explore")
+                try:
+                    valid = valid.detach().cpu().numpy()
+                    action_numpy = np.random.choice(valid.nonzero()[1], size=1)
+                except:
+                    num_pixels = target_V.shape[1]
+                    action_numpy = np.random.randint(num_pixels, size=(1,))
+
+            else:
+                pick_conf = target_V + mask
+                pi = Categorical(logits = pick_conf)
+                action = pi.sample()
+                action_numpy = action.detach().cpu().numpy()
+        else:
+
+            if expl_rv <= self.exploration_rate:
+                print("Explore")
+                num_pixels = target_V.shape[1]
+                action_numpy = np.random.randint(num_pixels, size=(1,))
+
+            else:
+                pi = Categorical(logits=pick_conf)
+                action = pi.sample()
+                action_numpy = action.detach().cpu().numpy()
+
+        action_reshaped = np.unravel_index(action_numpy, shape=input_image_shape)
+        
+        picking_pixel = action_reshaped[:2]
+        picking_y = int(picking_pixel[0])
+        picking_x = int(picking_pixel[1])
+
+        action = action_numpy
+
         return action, picking_y, picking_x
     
     def act_batch(self, input_image, sample_idxs):   
@@ -338,28 +365,19 @@ class REDQAgent:
         
         return metrics
         
-    def update(self, replay_iter, replay_buffer_expert, step):
+    def update(self, replay_iter, step):
         metrics = dict()
         
         for i_update in range(self.num_update):
-            batch_expert = next(replay_buffer_expert)
-            obs_e_raw, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
             batch = next(replay_iter)
-            obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
-
-            reward = reward_a
+            obs, action, reward, discount, next_obs = utils.to_torch(batch, self.device)
             
             if self.use_tb:
-                metrics['batch_reward'] = reward_a.mean().item()
+                metrics['batch_reward'] = reward.mean().item()
 
-            # augment
-            if self.augmentation:
-                obs = self.aug(obs.float())
-                next_obs = self.aug(next_obs.float())
-            else:
-                obs = obs.float()
-                next_obs = next_obs.float()    
+            obs = obs.float()
+            next_obs = next_obs.float()    
 
             # encode
             obs = self.encoder(obs)
