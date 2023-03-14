@@ -295,9 +295,9 @@ class Workspace:
                 Last=True
                 self._global_episode += 1
 
-                for key,value in self._episode_eval[1].items():
-                    if key not in self._episode_eval[0]:
-                        self._episode_eval[0][key] = 0*value*value
+                for key,value in self._episode_train[1].items():
+                    if key not in self._episode_train[0]:
+                        self._episode_train[0][key] = 0*value
 
                 episode = {k: [t[k] for t in self._episode_train] for k in self._episode_train[0]}
                 episode = {k: self._convert(v) for k, v in episode.items()}

@@ -613,7 +613,7 @@ class ImagBehavior(nn.Module):
     else:
       feat_size = config.dyn_stoch + config.dyn_deter
 
-    self.actor = ActionHead(feat_size, self.action_shape, config.actor_layers, config.units, act,
+    self.actor = ActionHead(feat_size, self.action_shape, config.actor_layers, config.units_actor, act,
                             config.actor_dist, config.actor_init_std, config.actor_min_std, config.actor_dist, config.actor_temp, config.actor_outscale)
 
     self.value = DenseHead(feat_size, [], config.value_layers, config.units, act, config.value_head)

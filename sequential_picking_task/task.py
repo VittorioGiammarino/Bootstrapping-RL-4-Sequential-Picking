@@ -132,7 +132,7 @@ class env:
                     self.list_of_boxes.remove(suctioned_object)
 
                     if self.cfg.reward_id == 1:
-                        print(position0)
+                        #print(position0)
                         reward = (1+2*position0[2])
                     else:
                         reward = 1-self.cfg.accuracy_error_weight*accuracy_error

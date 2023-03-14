@@ -68,6 +68,7 @@ dyn_min_std: 0.1
 dyn_temp_post: True
 grad_heads: ['image', 'reward']
 units: 400
+units_actor: 8192
 reward_layers: 4
 discount_layers: 4
 value_layers: 4
@@ -88,7 +89,7 @@ reward_scale: 1.0
 weight_decay: 1e-6
 
 # Training
-batch_size_training: 50
+batch_size_training: 10
 batch_length_training: 20
 train_every: 1
 train_steps: 1
