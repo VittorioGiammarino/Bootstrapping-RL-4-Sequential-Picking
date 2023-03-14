@@ -1,0 +1,160 @@
+defaults:
+  - _self_
+  - override hydra/launcher: submitit_local
+  
+#misc
+use_tb: true
+seed: 1
+device: cuda
+GUI: false
+save_snapshot: false
+
+# train settings
+num_seed_steps: 100
+num_expl_steps: 500
+num_train_steps: 100000
+pretrain: 100
+
+# interrupt when rollout goes too bad
+early_stop: false
+
+# env
+accuracy_error_weight: 2
+side_pick_only: true
+add_noise: false
+image_width: 64
+image_height: 64
+n_channels: 3
+reward_id: 0
+
+#options env
+from_segm: false
+
+# eval
+eval_every_episodes: 10
+num_eval_episodes: 3
+
+# agent settings
+logdir: null
+traindir: null
+evaldir: null
+offline_traindir: ''
+offline_evaldir: ''
+#gpu_growth: True
+precision: 16
+debug: False
+expl_gifs: False
+
+# Environment
+envs: 1
+time_limit: 1000
+grayscale: False
+eval_noise: 0.0
+clip_rewards: 'tanh'
+
+# Model
+dyn_cell: 'gru_layer_norm'
+dyn_hidden: 600
+dyn_deter: 600
+dyn_stoch: 32
+dyn_discrete: 32
+dyn_input_layers: 1
+dyn_output_layers: 1
+dyn_rec_depth: 1
+dyn_shared: False
+dyn_mean_act: 'none'
+dyn_std_act: 'sigmoid2'
+dyn_min_std: 0.1
+dyn_temp_post: True
+grad_heads: ['image', 'reward']
+units: 400
+reward_layers: 4
+discount_layers: 4
+value_layers: 4
+actor_layers: 4
+act: 'ELU'
+cnn_depth: 48
+encoder_kernels: [4, 4, 4, 4]
+decoder_kernels: [5, 5, 6, 6]
+decoder_thin: True
+value_head: 'normal'
+kl_scale: 0.1
+kl_balance: '0.8'
+kl_free: '0.0'
+kl_forward: False
+pred_discount: False
+discount_scale: 1.0
+reward_scale: 1.0
+weight_decay: 1e-6
+
+# Training
+batch_size_training: 50
+batch_length_training: 10
+train_every: 1
+train_steps: 1
+model_lr: 2e-4
+value_lr: 1e-4
+actor_lr: 4e-5
+opt_eps: 1e-5
+grad_clip: 100
+value_grad_clip: 100
+actor_grad_clip: 100
+dataset_size: 0
+oversample_ends: True
+slow_value_target: True
+slow_actor_target: True
+slow_target_update: 5
+slow_target_fraction: 1
+opt: 'adam'
+
+# Behavior.
+discount: 0.999
+discount_lambda: 0.95
+imag_horizon: 15
+imag_gradient: 'both'
+imag_gradient_mix: 'linear(0.1,0,2.5e6)'
+imag_sample: True
+actor_dist: 'onehot'
+actor_entropy: 'linear(3e-3,3e-4,2.5e6)'
+actor_state_entropy: 0.0
+actor_init_std: 1.0
+actor_min_std: 0.01
+actor_disc: 5
+actor_temp: 0.1
+actor_outscale: 0.0
+expl_amount: 0.0
+eval_state_mean: False
+collect_dyn_sample: True
+behavior_stop_grad: True
+value_decay: 0.0
+future_entropy: False
+
+# Exploration
+expl_behavior: 'greedy'
+expl_until: 0
+expl_extr_scale: 0.0
+expl_intr_scale: 1.0
+disag_target: 'stoch'
+disag_log: True
+disag_models: 10
+disag_offset: 1
+disag_layers: 4
+disag_units: 400
+disag_action_cond: False
+
+
+hydra:
+  run:
+    dir: ./experiments/train_dreamer/from_segm_${from_segm}/${now:%Y.%m.%d}_${now:%H%M%S}_${hydra.job.override_dirname}
+  sweep:
+    dir: ./experiments/multirun_train_dreamer/from_segm_${from_segm}/
+    subdir: ${now:%Y.%m.%d}_${now:%H%M%S}_${hydra.job.override_dirname}
+  launcher:
+    timeout_min: 18000000
+    cpus_per_task: 10
+    gpus_per_node: 1
+    tasks_per_node: 1
+    mem_gb: 160
+    nodes: 1
+    submitit_folder: ./experiments/multirun_train_dreamer/from_segm_${from_segm}/${now:%Y.%m.%d}_${now:%H%M%S}_${hydra.job.override_dirname}
+
