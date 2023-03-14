@@ -54,9 +54,9 @@ num_update: 5
 
 hydra:
   run:
-    dir: ./experiments/train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}/${now:%H%M%S}_${hydra.job.override_dirname}
+    dir: ./experiments/train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}_reward_id_${reward_id}/${now:%H%M%S}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/multirun_train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}/
+    dir: ./experiments/multirun_train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}_reward_id_${reward_id}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M%S}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -65,5 +65,5 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/multirun_train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}/${now:%Y.%m.%d}_${now:%H%M}
+    submitit_folder: ./experiments/multirun_train_RL/${agent_name}_safety_mask_${safety_mask}_from_segm_${from_segm}_reward_id_${reward_id}/${now:%Y.%m.%d}_${now:%H%M}
 
