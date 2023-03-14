@@ -122,7 +122,7 @@ actor_min_std: 0.01
 actor_disc: 5
 actor_temp: 0.1
 actor_outscale: 0.0
-expl_amount: 0.0
+expl_amount: 0.1
 eval_state_mean: False
 collect_dyn_sample: True
 behavior_stop_grad: True
@@ -130,7 +130,7 @@ value_decay: 0.0
 future_entropy: False
 
 # Exploration
-expl_behavior: 'greedy'
+expl_behavior: 'random'
 expl_until: 0
 expl_extr_scale: 0.0
 expl_intr_scale: 1.0
