@@ -30,7 +30,7 @@ reward_id: 0
 
 #options env
 from_segm: false
-safety_mask: true
+safety_mask: false
 
 # eval
 eval_every_episodes: 10

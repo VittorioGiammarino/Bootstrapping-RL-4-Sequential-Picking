@@ -89,7 +89,7 @@ weight_decay: 1e-6
 
 # Training
 batch_size_training: 50
-batch_length_training: 10
+batch_length_training: 20
 train_every: 1
 train_steps: 1
 model_lr: 2e-4

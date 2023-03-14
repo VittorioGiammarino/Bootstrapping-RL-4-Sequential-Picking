@@ -781,8 +781,7 @@ class DreamerV2Agent(nn.Module):
 
     reward = lambda f, s, a: self.world_model.heads['reward'](f).mean
 
-    self._expl_behavior = dict(greedy=lambda: self.task_behavior, 
-                              random=lambda: expl.Random(config),)[config.expl_behavior]()
+    self._expl_behavior = dict(greedy=lambda: self.task_behavior, random=lambda: expl.Random(config, self.num_actions),)[config.expl_behavior]()
 
   def train(self, training=True):
     self.training=training
@@ -846,8 +845,8 @@ class DreamerV2Agent(nn.Module):
       return action
 
     if 'onehot' in self._config.actor_dist:
-      probs = amount / self._config.num_actions + (1-amount)*action
-      return utils.OneHotDist(probs=probs).sample()
+      probs = amount / self.num_actions + (1-amount)*action
+      return utils.OneHotDist(probs=probs).sample().to(self.device)
 
     else:
       return torch.clip(torchd.normal.Normal(action, amount).sample(), -1, 1)
