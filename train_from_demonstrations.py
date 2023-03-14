@@ -51,7 +51,7 @@ class Workspace:
         with open(Path2Data, 'rb') as f:
             self.dataset = pickle.load(f)
             
-        self.expert_states = self.dataset["state"]
+        self.expert_states = self.dataset["image"]
         self.expert_pixels = self.dataset["action"]
         self.avg_expert_reward = np.sum(self.dataset["reward"])/np.sum(self.dataset["terminal"])
         

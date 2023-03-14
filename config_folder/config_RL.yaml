@@ -14,7 +14,7 @@ save_snapshot: false
 # train settings
 num_seed_steps: 100
 num_expl_steps: 500
-num_train_steps: 10000
+num_train_steps: 100000
 
 # interrupt when rollout goes too bad
 early_stop: false
@@ -23,8 +23,8 @@ early_stop: false
 accuracy_error_weight: 2
 side_pick_only: true
 add_noise: false
-image_width: 160
-image_height: 160
+image_width: 64
+image_height: 64
 n_channels: 3
 reward_id: 0
 

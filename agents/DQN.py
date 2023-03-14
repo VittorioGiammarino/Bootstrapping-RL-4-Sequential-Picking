@@ -73,7 +73,6 @@ class Encoder(nn.Module):
         in_shape = (1,) + in_data_processed.shape
         in_data_processed = in_data_processed.reshape(in_shape)
         in_tens = torch.tensor(in_data_processed, dtype=torch.float32).to(self.device)
-            
         return in_tens  
     
 class Critic(nn.Module):

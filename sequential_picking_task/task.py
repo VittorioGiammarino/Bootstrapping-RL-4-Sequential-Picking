@@ -201,7 +201,7 @@ class env:
         return input_image, input_segm
         
     def eval_episode(self, agent):
-        input_image = self.reset()
+        input_image, input_segm = self.reset()
         
         time_step = 0
         episode_reward = 0
@@ -212,7 +212,7 @@ class env:
             print(f"py: {picking_pixel_y}, px: {picking_pixel_x}") 
             action = (picking_pixel_y, picking_pixel_x)
                 
-            input_image, reward, done, info = self.step(action) 
+            input_image, input_segm, reward, done, info = self.step(action) 
             
             episode_reward+=reward
             time_step+=1

@@ -6,28 +6,29 @@ defaults:
 use_tb: true
 seed: 1
 device: cuda
-GUI: true
+GUI: false
 save_snapshot: true
 
 # training specs
 total_number_of_training_steps: 100000
 evaluate_every: 5000
 learning_rate: 1e-4
-augment: true
+augment: false
 
 #env
 accuracy_error_weight: 2
 side_pick_only: true
-add_noise: true
-image_height: 160
-image_width: 160
+add_noise: false
+image_height: 64
+image_width: 64
+reward_id: 0
 
 #expert data
-path2data: store_expert_data/2022.08.11/094020_GUI=false,num_episodes=50,side_pick_only=false/expert_data.pkl
+path2data: store_expert_data/2023.03.13/expert_data.pkl
 
 #policy to evaluate
 evaluate_only: false
-eval_only_iterations: 10
+eval_only_iterations: 3
 path2policy: ???
 
 hydra:

@@ -496,8 +496,7 @@ class Encoder(nn.Module):
         return h
 
 class Decoder(nn.Module):
-    def __init__(self,
-                 output_dim):
+    def __init__(self, output_dim):
         """Build Resnet 43 8s."""
         super().__init__()
 

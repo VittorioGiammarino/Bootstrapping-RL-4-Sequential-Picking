@@ -8,8 +8,8 @@ GUI: false
 seed: 1
 
 #data
-resize_height: 160
-resize_width: 160
+resize_height: 64
+resize_width: 64
 
 #env
 parcel_chooser: Heuristic
