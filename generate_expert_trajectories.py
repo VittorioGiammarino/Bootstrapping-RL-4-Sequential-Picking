@@ -85,6 +85,7 @@ class Workspace:
     
     def store(self):
         buffer = {}
+        buffer["real_image"] = []
         buffer["image"] = []
         buffer["segm"] = []
         buffer["action"] = []
@@ -111,6 +112,8 @@ class Workspace:
             while len(list_of_boxes)>0:      
                 cartesian_position_box = []
                 self.color_image, self.depth, self.segm = self.camera.get_image() # get an image from camera
+                buffer["real_image"].append(self.color_image)
+
                 self.color_image, _, self.segm = self.kuka.crop_camera_images(self.color_image, self.depth, self.segm) # crop the area of interest
                 
                 camera_view_resized, segm_resized = self.kuka.resize_camera_images(self.color_image, self.segm, resize=self.resized_img_dim) # resize the image in the way you prefer          

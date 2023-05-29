@@ -45,12 +45,12 @@ class env:
             
         p.setGravity(0, 0, -9.8)
         
-        self.robot_in_the_scene = False
-        self.container_height=7
-        self.container_width=1
-        self.container_length=6
+        self.robot_in_the_scene = False #boolean describing whether robot is initialized
+        self.container_height=7 #number of parcels one on top of another
+        self.container_width=1 #number of walls
+        self.container_length=6 #number of piles
             
-        self.camera = Cameras(self.cfg.add_noise)
+        self.camera = Cameras(self.cfg.add_noise) 
         self.color_image, self.depth, self.segm = self.camera.get_image()
         self.point_cloud_generator = PointCloud(self.camera.CONFIG)
         
